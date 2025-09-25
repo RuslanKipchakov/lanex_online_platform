@@ -3,8 +3,8 @@ from pydantic import BaseModel
 from typing import List, Optional, Dict, Any
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from lanex_online_platform.database.async_db_connection import get_db
-from lanex_online_platform.database.models import (
+from database.async_db_connection import get_db
+from database.models import (
     PreferredClassFormatEnum,
     PreferredStudyModeEnum,
     LevelEnum,

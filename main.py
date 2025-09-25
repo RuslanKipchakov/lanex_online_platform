@@ -4,9 +4,9 @@ import logging
 import uvicorn
 from aiogram import Bot, Dispatcher
 
-from lanex_online_platform.server import app  # твой FastAPI
-from lanex_online_platform.database.config import settings
-from lanex_online_platform.telegram.handlers import register_handlers
+from server import app
+from database.config import settings
+from telegram.handlers import register_handlers
 
 
 logging.basicConfig(level=logging.INFO)

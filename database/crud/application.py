@@ -3,8 +3,8 @@ from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi import HTTPException
 
-from lanex_online_platform.logging_config import logger
-from lanex_online_platform.database.models import (
+from logging_config import logger
+from database.models import (
     Application,
     LevelEnum,
     PreferredClassFormatEnum,

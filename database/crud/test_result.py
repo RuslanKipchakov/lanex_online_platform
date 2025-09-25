@@ -2,8 +2,8 @@ from sqlalchemy import select
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from lanex_online_platform.logging_config import logger
-from lanex_online_platform.database.models import TestResult, LevelEnum
+from logging_config import logger
+from database.models import TestResult, LevelEnum
 
 async def create_test_result(
         session: AsyncSession,

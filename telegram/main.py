@@ -1,8 +1,8 @@
 import asyncio
 import logging
 from aiogram import Bot, Dispatcher
-from lanex_online_platform.database.config import settings
-from lanex_online_platform.telegram.handlers import register_handlers
+from database.config import settings
+from telegram.handlers import register_handlers
 
 # Включаем логи, чтобы видеть, что бот работает
 logging.basicConfig(level=logging.INFO)

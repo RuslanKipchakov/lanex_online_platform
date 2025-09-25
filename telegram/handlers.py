@@ -1,5 +1,5 @@
 from aiogram import Router, types, F
-from lanex_online_platform.telegram.keyboards import main_menu, levels_menu
+from telegram.keyboards import main_menu, levels_menu
 
 router = Router()
 

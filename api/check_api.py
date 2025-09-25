@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from typing import Dict, Any
-from lanex_online_platform.utilities.check_function import check_test_results
+from utilities.check_function import check_test_results
 
 router = APIRouter(prefix="/api")
 
