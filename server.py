@@ -29,25 +29,18 @@
 # )
 
 from fastapi import FastAPI
-import logging
 import os
+import logging
 
-# Логи для диагностики
 logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger("server")
-
-logger.info("🔥 Запуск минимального FastAPI сервера...")
-
 app = FastAPI()
 
 @app.get("/ping")
 async def ping():
-    logger.info("🏓 Ping получен")
     return {"status": "ok", "message": "FastAPI работает!"}
 
-# Для локального запуска (не обязателен на Railway)
 if __name__ == "__main__":
     import uvicorn
-    port = int(os.environ.get("PORT", 8000))
-    logger.info(f"Сервер будет слушать на 0.0.0.0:{port}")
+    port = int(os.environ.get("PORT", 8000))  # берем порт из окружения
+    logging.info(f"Сервер стартует на 0.0.0.0:{port}")
     uvicorn.run(app, host="0.0.0.0", port=port)
