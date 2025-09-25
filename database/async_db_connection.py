@@ -26,7 +26,7 @@ async def get_db() -> AsyncGenerator[AsyncSession, None]:
         yield session
 
 
-from lanex_online_platform.database.models import *  # noqa: F401, E402, F403
+from database.models import *  # noqa: F401, E402, F403
 
 
 async def test_async_db() -> None:
