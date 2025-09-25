@@ -28,10 +28,25 @@
 #     allow_headers=["*"],
 # )
 
+import os
+import logging
 from fastapi import FastAPI
+
+# Логи в консоль для диагностики
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+logger.info("🔥 Запуск минимального FastAPI сервера...")
 
 app = FastAPI()
 
+# Тестовый эндпоинт для проверки
 @app.get("/ping")
 async def ping():
-    return {"status": "ok"}
+    logger.info("Ping endpoint вызван!")
+    return {"status": "ok", "message": "FastAPI сервер работает!"}
+
+# Информация о хосте и порте при старте
+port = int(os.environ.get("PORT", 8000))
+host = "0.0.0.0"
+logger.info(f"Сервер будет слушать на {host}:{port}")
