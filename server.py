@@ -28,19 +28,23 @@
 #     allow_headers=["*"],
 # )
 
-from fastapi import FastAPI
+# server.py
 import os
 import logging
+from fastapi import FastAPI
 
 logging.basicConfig(level=logging.INFO)
+
 app = FastAPI()
 
 @app.get("/ping")
 async def ping():
-    return {"status": "ok", "message": "FastAPI работает!"}
+    logging.info("🔥 /ping endpoint called")
+    return {"status": "ok", "message": "Server is running!"}
+
 
 if __name__ == "__main__":
     import uvicorn
-    port = int(os.environ.get("PORT", 8080))  # default 8080 только для локального теста
-    uvicorn.run(app, host="0.0.0.0", port=port)
+    port = int(os.environ.get("PORT", 8000))  # Railway задаёт этот порт автоматически
+    logging.info(f"🚀 Starting FastAPI server on 0.0.0.0:{port}")
     uvicorn.run(app, host="0.0.0.0", port=port)
