@@ -22,17 +22,18 @@ async def start_bot():
 
 
 async def start_server():
-    port = int(os.environ.get("PORT", 8000))  # Railway сам задаёт PORT
+    port = int(os.environ.get("PORT", 8000))  # Railway задаёт PORT
     config = uvicorn.Config(
         app=app,
         host="0.0.0.0",  # обязательно для внешнего доступа
-        port=int(os.getenv("PORT", 8080)),
+        port=port,       # 👈 здесь используем port, а не os.getenv("PORT", 8080)
         reload=False,
         log_level="info"
     )
     server = uvicorn.Server(config)
     logging.info(f"🌐 FastAPI сервер запущен на 0.0.0.0:{port} ...")
     await server.serve()
+
 
 
 async def main():
