@@ -26,7 +26,7 @@ async def start_server():
     config = uvicorn.Config(
         app=app,
         host="0.0.0.0",  # обязательно для внешнего доступа
-        port=port,
+        port=int(os.getenv("PORT", 8080)),
         reload=False,
         log_level="info"
     )
