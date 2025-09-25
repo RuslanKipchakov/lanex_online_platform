@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import os
 
 import uvicorn
 from aiogram import Bot, Dispatcher
@@ -21,15 +22,16 @@ async def start_bot():
 
 
 async def start_server():
+    port = int(os.environ.get("PORT", 8000))  # Railway сам задаёт PORT
     config = uvicorn.Config(
         app=app,
-        host="127.0.0.1",
-        port=8000,
-        reload=False,   # reload нельзя в комбинированном режиме
+        host="0.0.0.0",  # обязательно для внешнего доступа
+        port=port,
+        reload=False,
         log_level="info"
     )
     server = uvicorn.Server(config)
-    logging.info("🌐 FastAPI сервер запущен...")
+    logging.info(f"🌐 FastAPI сервер запущен на 0.0.0.0:{port} ...")
     await server.serve()
 
 
