@@ -1,0 +1,141 @@
+/* Контейнер формы */
+.form-container {
+  max-width: 800px;
+  margin: 40px auto;
+  padding: 25px 30px;
+  background: #fff;
+  border-radius: 10px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+}
+
+/* Общие элементы формы */
+form label {
+  display: block;
+  margin: 10px 0 5px;
+  font-weight: 500;
+}
+
+form input[type="text"],
+form input[type="tel"],
+form input[type="number"] {
+  width: 100%;
+  padding: 8px 10px;
+  font-size: 15px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  box-sizing: border-box;
+}
+
+fieldset {
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  padding: 12px 15px;
+  margin: 15px 0;
+  background: #fafafa;
+}
+
+legend {
+  font-weight: 600;
+  padding: 0 6px;
+}
+
+/* Сетка расписания */
+.schedule-grid {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr); /* теперь только 6 колонок */
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.schedule-grid .day-header {
+  font-weight: bold;
+  text-align: center;
+  padding: 6px;
+  background: #eef5ff;
+  border-radius: 6px;
+}
+
+.schedule-grid .time-slot {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  background: #fff;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  padding: 4px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.schedule-grid .time-slot input {
+  margin-right: 4px;
+}
+
+.schedule-grid .time-slot:hover {
+  background: #f0f8ff;
+}
+
+/* Модальное окно (скрыто по умолчанию) */
+.modal {
+  display: none; /* скрыто по умолчанию */
+  position: fixed;
+  z-index: 1000;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: rgba(0, 0, 0, 0.6);
+  align-items: center;
+  justify-content: center;
+}
+
+.modal.active {
+  display: flex; /* показываем только когда есть класс active */
+}
+
+
+/* Контент внутри модалки */
+.modal-content {
+  background: #fff;
+  padding: 25px 30px;
+  border-radius: 12px;
+  text-align: center;
+  max-width: 400px;
+  width: 90%;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.25);
+  animation: fadeIn 0.3s ease;
+}
+
+.modal-content h2 {
+  margin-bottom: 10px;
+  font-size: 20px;
+  color: #2c7a7b;
+}
+
+.modal-content p {
+  margin-bottom: 20px;
+  font-size: 16px;
+}
+
+.modal-content button {
+  padding: 8px 16px;
+  font-size: 15px;
+  background: #2c7a7b;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.modal-content button:hover {
+  background: #205e5f;
+}
+
+/* Анимация появления */
+@keyframes fadeIn {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}

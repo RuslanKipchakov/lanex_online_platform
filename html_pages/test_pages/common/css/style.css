@@ -1,0 +1,286 @@
+/* Общий стиль */
+body {
+  font-family: Arial, sans-serif;
+  font-size: 16px;
+  line-height: 1.4;
+  background: #f9f9f9;
+  margin: 0;
+  padding: 20px;
+  color: #222;
+}
+
+/* Заголовки */
+h1, h2, h3 {
+  font-weight: 600;
+  margin-bottom: 15px;
+}
+
+/* Текст вопроса */
+.task-question {
+  display: flex;          /* номер и текст/плеер в одну линию */
+  align-items: center;
+  margin: 0 0 10px 0;
+  font-weight: bold;
+}
+
+/* Нумерация */
+.task-question .num {
+  display: inline-block;
+  width: 28px;
+  text-align: left;
+  margin-right: 4px;
+  font-weight: bold;
+}
+
+.option {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 4px 0;
+  cursor: pointer;
+  font-weight: normal;
+}
+
+.option input {
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  margin: 0;
+}
+
+/* Аудио */
+audio {
+  margin: 8px 0;
+}
+
+/* Заглушка для аудио */
+.audio-locked {
+  color: #999;
+  font-size: 14px;
+  font-style: italic;
+  padding: 5px 0;
+}
+
+/* Текстовые ответы (Task 3) */
+textarea {
+  line-height: 1.2;
+  width: 100%;
+  min-height: 24px;
+  padding: 3px 6px;
+  font-size: 16px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  resize: vertical;
+  box-sizing: border-box;
+}
+
+/* Кнопки */
+button {
+  font-weight: 500;
+  background: #007bff;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 10px 18px;
+  margin: 10px 5px 0 0;
+  font-size: 15px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+button:hover {
+  background: #0056b3;
+}
+
+button:active {
+  transform: scale(0.97);
+}
+
+#cancelBtn {
+  background: #ccc;
+  color: #222;
+}
+
+#cancelBtn:hover {
+  background: #999;
+}
+
+/* Контейнер всей страницы */
+.container {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+/* Карточка вопроса */
+.question {
+  background: #fff;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  padding: 15px;
+  margin-bottom: 20px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+}
+
+/* Подсветка целого блока */
+.question.correct-block {
+  background-color: #d4edda;
+  border: 2px solid #28a745;
+}
+
+.question.incorrect-block {
+  background-color: #f8d7da;
+  border: 2px solid #dc3545;
+}
+
+/* Баллы по заданиям */
+.task-score {
+  margin-top: 8px;
+  font-weight: bold;
+  color: #333;
+}
+
+/* Общий итог */
+.total-score {
+  margin: 20px auto;
+  font-size: 20px;
+  font-weight: bold;
+  text-align: center;
+  color: #222;
+}
+
+.open-input {
+  line-height: 1.2;
+  width: 100%;
+  padding: 3px 6px;
+  font-size: 16px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  box-sizing: border-box;
+}
+
+.reading-passage {
+  background: #fff;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  padding: 15px;
+  margin-bottom: 20px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+}
+
+.reading-passage p {
+  white-space: pre-line;
+  line-height: 1.5;
+}
+
+.task-instruction {
+  background: #eef5ff;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  padding: 15px;
+  margin-bottom: 20px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+  color: #333;
+}
+
+.writing-textarea {
+  width: 100%;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  padding: 10px;
+  font-size: 15px;
+  resize: vertical;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  transition: border-color 0.2s ease;
+}
+
+.writing-textarea:focus {
+  border-color: #007BFF;
+  outline: none;
+  box-shadow: 0 0 6px rgba(0,123,255,0.4);
+}
+
+/* --- Drag&Drop (единый стиль) --- */
+.dragdrop-shared {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 15px 0;
+  padding: 10px;
+  background: #f1f5ff;
+  border: 1px dashed #007bff;
+  border-radius: 8px;
+}
+
+.dragdrop-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.drag-item {
+  background: #fffef6;
+  border: 2px solid #ff9800;
+  border-radius: 10px;
+  padding: 10px 16px;
+  min-width: 160px;
+  text-align: center;
+  cursor: grab;
+  box-shadow: 0 3px 8px rgba(0,0,0,0.15);
+  transition: transform 0.15s ease, background 0.15s ease;
+  font-weight: 600;
+  user-select: none;
+  position: relative;
+}
+
+.drag-item:hover {
+  background: #fff3e0;
+  transform: scale(1.05);
+}
+
+.drag-item:active {
+  cursor: grabbing;
+  transform: scale(0.95);
+}
+
+.drop-zone {
+  margin-top: 8px;
+  padding: 8px 12px;
+  min-height: 40px;
+  border: 2px dashed #bbb;
+  border-radius: 6px;
+  background: #fafafa;
+  font-size: 14px;
+  color: #666;
+  text-align: center;
+  transition: border-color 0.2s ease, background 0.2s ease;
+}
+
+.drop-zone.drag-over {
+  border-color: #007bff;
+  background: #eef5ff;
+  color: #222;
+}
+
+.drag-item.selected {
+  border: 2px solid #007bff;
+  background: #eaf2ff;
+}
+
+.chip-answer {
+  display: inline-block;
+  background: #fff3e0;
+  border: 2px solid #ff9800;
+  border-radius: 8px;
+  padding: 6px 12px;
+  margin: 2px;
+  font-weight: 600;
+  color: #333;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+/* Disable user interaction with the progress/seek bar */
+.plyr__progress {
+  pointer-events: none;
+}

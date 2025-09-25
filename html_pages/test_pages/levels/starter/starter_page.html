@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Starter Level Test</title>
+  <link rel="stylesheet" href="../../common/css/style.css" />
+
+  <link rel="stylesheet" href="https://cdn.plyr.io/3.7.8/plyr.css" />
+  <script src="https://cdn.plyr.io/3.7.8/plyr.polyfilled.js"></script>
+</head>
+<body>
+  <div class="container">
+    <h1>Тест на подтверждение уровня Starter</h1>
+
+    <p><b>Дисклеймер:</b> Данный тест составлен преподавателями учебного центра Lanex исключительно для внутреннего использования.</p>
+
+    <h2>Рекомендации перед началом теста:</h2>
+    <ul>
+      <li>Убедитесь, что у вас есть 30–40 минут свободного времени;</li>
+      <li>Проверьте, что вы можете прослушивать аудиофайлы (Task 2);</li>
+      <li>Подготовьте бумагу и ручку/карандаш (при необходимости);</li>
+      <li>Не используйте словари или стороннюю помощь;</li>
+    </ul>
+
+    <form id="testForm">
+      <h2>Task 1: Choose the correct answer</h2>
+      <p class="task-instruction">
+        Выберите один правильный вариант ответа в каждом вопросе (A–D).
+      </p>
+      <div id="task1"></div>
+
+      <h2>Task 2: Listen and choose</h2>
+      <p class="task-instruction">
+        Прослушайте запись и выберите то, что вы услышали.
+          <b>Каждое аудио можно прослушать только один раз.</b>
+        После прослушивания отметьте правильный вариант (A–D).
+      </p>
+      <div id="task2"></div>
+
+      <h2>Task 3: Translate sentences into English</h2>
+      <p class="task-instruction">
+        Переведите предложения на английский язык.
+        Пишите полный правильный вариант ответа.
+      </p>
+      <div id="task3"></div>
+
+      <div class="buttons">
+        <button type="button" id="submit-test">Отправить ответы</button>
+        <button type="button" id="back">Назад</button>
+      </div>
+    </form>
+
+    <div id="result"></div>
+  </div>
+
+  <!-- движок и рендер -->
+  <script type="module" src="../../common/js/test_engine.js"></script>
+
+  <!-- данные заданий -->
+  <script type="module" src="./js/task1_data.js"></script>
+  <script type="module" src="./js/task2_data.js"></script>
+  <script type="module" src="./js/task3_data.js"></script>
+
+  <!-- функции рендера -->
+  <script type="module" src="./js/render_task1.js"></script>
+  <script type="module" src="./js/render_task2.js"></script>
+  <script type="module" src="./js/render_task3.js"></script>
+
+  <!-- главный скрипт -->
+  <script type="module" src="./js/main.js"></script>
+</body>
+</html>
