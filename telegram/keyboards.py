@@ -1,6 +1,6 @@
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, WebAppInfo
 
-BASE_URL = "innovative-intuition-mynewenv.up.railway.app"
+BASE_URL = "https://innovative-intuition-mynewenv.up.railway.app"
 
 # Главное меню
 main_menu = InlineKeyboardMarkup(inline_keyboard=[
