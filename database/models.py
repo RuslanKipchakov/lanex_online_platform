@@ -12,31 +12,36 @@ from sqlalchemy import (
     Boolean,
     DateTime,
 )
-
 from sqlalchemy import Enum as SqlEnum
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy.dialects.postgresql import ARRAY as PG_ARRAY
 
-from .async_db_connection import Base
+from .base import Base
 
+
+# --- Константы ---
 MIN_APPLICANT_NAME_LENGTH = 2
 MAX_APPLICANT_NAME_LENGTH = 50
-PHONE_NUMBER_LENGTH = 13  # Стандарт формата: +998XXXXXXXXX
+PHONE_NUMBER_LENGTH = 13  # Формат: +998XXXXXXXXX
 
 
+# --- ENUM классы ---
 class SessionStatusEnum(str, Enum):
     initiated = "initiated"
     in_progress = "in_progress"
     completed = "completed"
+
 
 class PreferredClassFormatEnum(str, Enum):
     individual = "individual"
     pair = "pair"
     group = "group"
 
+
 class PreferredStudyModeEnum(str, Enum):
     online = "online"
     offline = "offline"
+
 
 class LevelEnum(str, Enum):
     starter = "Starter"
@@ -45,11 +50,13 @@ class LevelEnum(str, Enum):
     intermediate = "Intermediate"
     advanced = "Upper-Intermediate"
 
+
 class ReferenceSourceEnum(str, Enum):
     friends = "friends"
     internet = "internet"
     telegram = "telegram"
     other = "other"
+
 
 class PreviousExperienceEnum(str, Enum):
     never = "never"
@@ -59,16 +66,26 @@ class PreviousExperienceEnum(str, Enum):
     self_study = "self_study"
 
 
+# --- Модель сессии пользователя ---
 class UserSession(Base):
     __tablename__ = "user_sessions"
 
     telegram_id: Mapped[int] = mapped_column(primary_key=True)
     telegram_username: Mapped[str] = mapped_column(nullable=True)
+
+    # Список ID заявок, созданных пользователем
+    application_ids: Mapped[list[int]] = mapped_column(
+        PG_ARRAY(Integer),
+        nullable=True,
+        comment="Список ID заявок, связанных с этим пользователем"
+    )
+
     status: Mapped[SessionStatusEnum] = mapped_column(
         SqlEnum(SessionStatusEnum, name="session_status_enum", native_enum=False),
         nullable=False,
         default=SessionStatusEnum.initiated
     )
+
     started_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         nullable=False,
@@ -76,6 +93,7 @@ class UserSession(Base):
     )
 
 
+# --- Модель заявки ---
 class Application(Base):
     __tablename__ = "applications"
 
@@ -91,7 +109,6 @@ class Application(Base):
         nullable=False
     )
 
-    # теперь списки ENUM-ов:
     preferred_class_format: Mapped[list[PreferredClassFormatEnum]] = mapped_column(
         PG_ARRAY(SqlEnum(PreferredClassFormatEnum, name="preferred_class_format_enum", native_enum=False)),
         nullable=False
@@ -136,6 +153,7 @@ class Application(Base):
     )
 
 
+# --- Модель результата теста ---
 class TestResult(Base):
     __tablename__ = "test_results"
 
@@ -146,6 +164,13 @@ class TestResult(Base):
         nullable=False
     )
 
+    # Имя тестируемого (из формы или Telegram username)
+    test_taker: Mapped[str] = mapped_column(
+        String(MAX_APPLICANT_NAME_LENGTH),
+        nullable=True,
+        comment="Имя участника теста (из формы или Telegram)"
+    )
+
     level: Mapped[LevelEnum] = mapped_column(
         SqlEnum(LevelEnum, name="level_enum", native_enum=False),
         nullable=False
@@ -154,7 +179,7 @@ class TestResult(Base):
     closed_answers: Mapped[dict] = mapped_column(
         JSON,
         nullable=True,
-        comment='{"task_1": {"Q1": "A", "Q2": "C"}}'
+        comment='{"task_1": {"Q1": {"answer": "A", "status": "correct"}}}'
     )
 
     open_answers: Mapped[dict] = mapped_column(
@@ -179,4 +204,3 @@ class TestResult(Base):
         nullable=False,
         default=lambda: datetime.now(timezone.utc)
     )
-

@@ -13,7 +13,6 @@ class Settings(BaseSettings):
 
     # Admin & Dropbox
     telegram_bot_token: str
-    super_admin_id: int
     admin_telegram_id: int
     admin_name: str
     dropbox_access_token: str
@@ -34,10 +33,7 @@ class Settings(BaseSettings):
         )
 
     model_config = SettingsConfigDict(
-        env_file=os.path.abspath(
-            os.path.join(os.path.dirname(__file__), "..", ".env")
-        ),
-        env_file_encoding="utf-8",
+
         case_sensitive=False,
         env_prefix=""
     )

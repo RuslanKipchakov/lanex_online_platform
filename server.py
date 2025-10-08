@@ -11,6 +11,7 @@ from api import check_api, application_api
 from aiogram import Bot, Dispatcher
 from telegram.handlers import register_handlers
 from database.config import settings
+from database.utils import init_db  # 👈 добавляем импорт
 
 BASE_DIR = Path(__file__).resolve().parent
 
@@ -24,11 +25,23 @@ register_handlers(dp)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # startup
+    """Фаза запуска и завершения FastAPI"""
+    # === Инициализация БД ===
+    try:
+        logging.info("⏳ Проверка и создание таблиц в базе данных...")
+        await init_db()
+        logging.info("✅ Таблицы успешно созданы или уже существуют.")
+    except Exception as e:
+        logging.error(f"❌ Ошибка при инициализации базы данных: {e}")
+        raise e
+
+    # === Запуск Telegram-бота ===
     asyncio.create_task(dp.start_polling(bot))
     logging.info("🚀 Aiogram бот запущен вместе с FastAPI")
-    yield
-    # shutdown
+
+    yield  # --- здесь FastAPI работает ---
+
+    # === Остановка Telegram-бота ===
     await bot.session.close()
     logging.info("🛑 Aiogram бот остановлен")
 
@@ -54,7 +67,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Корневой эндпоинт
+# === Root endpoint ===
 @app.get("/")
 async def root():
     return {"status": "ok", "bot": "running"}

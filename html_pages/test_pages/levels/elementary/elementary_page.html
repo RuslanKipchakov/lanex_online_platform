@@ -3,76 +3,97 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Elementary Level Test</title>
+  <title>Тест уровня Elementary</title>
+
+  <!-- Основные стили -->
   <link rel="stylesheet" href="../../common/css/style.css" />
 
+  <!-- Плеер для аудио -->
   <link rel="stylesheet" href="https://cdn.plyr.io/3.7.8/plyr.css" />
-  <script src="https://cdn.plyr.io/3.7.8/plyr.polyfilled.js"></script>
+  <script defer src="https://cdn.plyr.io/3.7.8/plyr.polyfilled.js"></script>
 </head>
+
 <body>
   <div class="container">
-    <h1>Тест на подтверждение уровня Elementary</h1>
+    <header>
+      <h1>Тест на подтверждение уровня Elementary</h1>
+      <p><strong>Дисклеймер:</strong> данный тест составлен преподавателями учебного центра <b>Lanex</b> исключительно для внутреннего использования.</p>
+    </header>
 
-    <p><b>Дисклеймер:</b> Данный тест составлен преподавателями учебного центра Lanex исключительно для внутреннего использования.</p>
+    <div class="instructions">
+      <h2>Рекомендации перед началом теста:</h2>
+      <ul>
+        <li>Убедитесь, что у вас есть 30–40 минут свободного времени;</li>
+        <li>Проверьте, что вы можете прослушивать аудиофайлы (Task 2);</li>
+        <li>Подготовьте бумагу и ручку или карандаш (при необходимости);</li>
+        <li>Не используйте словари или стороннюю помощь.</li>
+      </ul>
+    </div>
 
-    <h2>Рекомендации перед началом теста:</h2>
-    <ul>
-      <li>Убедитесь, что у вас есть 30–40 минут свободного времени;</li>
-      <li>Проверьте, что вы можете прослушивать аудиофайлы (Task 2);</li>
-      <li>Подготовьте бумагу и ручку/карандаш (при необходимости);</li>
-      <li>Не используйте словари или стороннюю помощь;</li>
-    </ul>
+    <div id="user-info">
+      <label for="username">Введите ваше имя:</label>
+      <input type="text" id="username" name="username" placeholder="Ваше имя" required />
+    </div>
+
+    <!-- Скрытые поля -->
+    <input type="hidden" id="access-token" name="token" value="" />
+    <input type="hidden" id="telegram-id" name="telegram_id" value="" />
 
     <form id="testForm">
-      <h2>Task 1: Grammar and Vocabulary</h2>
-      <p class="task-instruction">
-        Выберите один правильный вариант ответа в каждом вопросе (A–D).
-      </p>
-      <div id="task1"></div>
+      <!-- Task 1 -->
+      <div id="task1">
+        <h2>Task 1: Grammar and Vocabulary</h2>
+        <p class="task-instruction">
+          Выберите один правильный вариант ответа в каждом вопросе (A–D).
+        </p>
+      </div>
 
-      <h2>Task 2: Listening</h2>
-      <p class="task-instruction">
-        Вам предложено 5 аудиозаписей. <b>Каждую запись можно прослушать только один раз.</b>
-        Перед прослушиванием внимательно прочитайте вопросы и варианты ответов, затем прослушайте запись и ответьте.
-        Встречаются форматы: выбор A–D, True/False и короткий ответ (впишите слово/фразу).
-      </p>
-      <div id="task2"></div>
+      <!-- Task 2 -->
+      <div id="task2">
+        <h2>Task 2: Listening</h2>
+        <p class="task-instruction">
+          Вам предложено 5 аудиозаписей. <b>Каждую запись можно прослушать только один раз.</b><br />
+          Перед прослушиванием внимательно прочитайте вопросы и варианты ответов, затем прослушайте запись и ответьте.
+        </p>
+      </div>
 
-      <h2>Task 3: Reading comprehension</h2>
-      <p class="task-instruction">
-        Прочитайте текст. Ответьте на вопросы 1–10, выбирая один правильный ответ (A–D).
-      </p>
-      <div id="task3"></div>
+      <!-- Task 3 -->
+      <div id="task3">
+        <h2>Task 3: Reading Comprehension</h2>
+        <p class="task-instruction">
+          Прочитайте текст. Ответьте на вопросы 1–10, выбирая один правильный ответ (A–D).
+        </p>
+      </div>
 
-      <h2>Task 4: Writing</h2>
-      <!-- Инструкция и поле для Task 4 рендерятся скриптом render_task4.js -->
-      <div id="task4"></div>
+      <!-- Task 4 -->
+      <div id="task4">
+        <h2>Task 4: Writing</h2>
+      </div>
 
       <div class="buttons">
         <button type="button" id="submit-test">Отправить ответы</button>
-        <button type="button" id="back">Назад</button>
       </div>
     </form>
 
     <div id="result"></div>
   </div>
 
-  <!-- движок и рендер -->
+  <!-- Подключение движка и рендеров -->
   <script type="module" src="../../common/js/test_engine.js"></script>
 
-  <!-- данные заданий -->
+  <!-- Данные заданий -->
   <script type="module" src="./js/task1_data.js"></script>
   <script type="module" src="./js/task2_data.js"></script>
   <script type="module" src="./js/task3_data.js"></script>
   <script type="module" src="./js/task4_data.js"></script>
 
-  <!-- функции рендера -->
+  <!-- Функции рендера -->
   <script type="module" src="./js/render_task1.js"></script>
   <script type="module" src="./js/render_task2.js"></script>
   <script type="module" src="./js/render_task3.js"></script>
   <script type="module" src="./js/render_task4.js"></script>
 
-  <!-- главный скрипт -->
+  <!-- Главный скрипт -->
   <script type="module" src="./js/main.js"></script>
 </body>
 </html>

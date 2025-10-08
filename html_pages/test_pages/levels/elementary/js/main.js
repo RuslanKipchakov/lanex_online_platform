@@ -20,7 +20,7 @@ renderTask3();
 renderTask4();
 
 // Инициализируем движок теста
-initTest("elementary", {
+const state = initTest("elementary", {
   task1: task1Data,
   task2: task2Data,
   task3: task3Data,

@@ -204,3 +204,7 @@ __marimo__/
 
 # temporary crud files
 database/crud/temp_*.py
+
+# initiation of database
+database/init_db.py
+

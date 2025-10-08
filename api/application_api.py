@@ -3,7 +3,7 @@ from pydantic import BaseModel
 from typing import List, Optional, Dict, Any
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from database.async_db_connection import get_db
+from database.base import get_db
 from database.models import (
     PreferredClassFormatEnum,
     PreferredStudyModeEnum,
@@ -33,8 +33,36 @@ class ApplicationSchema(BaseModel):
 @router.post("/applications", status_code=201)
 async def create_application_endpoint(
     data: ApplicationSchema,
+    telegram_id: int,
     session: AsyncSession = Depends(get_db)
 ):
-    # Пока — печатаем и возвращаем (позже заменим на вызов CRUD-функции)
-    print("📩 Получена заявка:", data.dict())
-    return {"status": "ok", "received": data.dict()}
+    # 1. создаём путь для хранения PDF
+    from utilities.creating_paths import create_application_path
+    pdf_path = create_application_path(data.name, telegram_id)
+
+    # 2. сохраняем заявку в БД
+    new_app = await create_application(session, data, telegram_id, pdf_path)
+
+    # 3. (TODO) генерим PDF, грузим в Dropbox, отправляем админу в Telegram
+
+    return {"status": "ok", "application_id": new_app.id}
+
+
+@router.post("/applications/update", status_code=200)
+async def update_application_endpoint(
+    data: ApplicationSchema,
+    telegram_id: int,
+    session: AsyncSession = Depends(get_db)
+):
+    from utilities.creating_paths import create_application_path
+
+    # создаём новый путь
+    pdf_path = create_application_path(data.name, telegram_id).replace(".pdf", f"_updated.pdf")
+
+    # сохраняем обновлённую заявку в БД
+    updated_app = await update_application_by_user_id(session, telegram_id, data, pdf_path)
+
+    # (TODO) генерим PDF, грузим в Dropbox, отправляем админу в Telegram
+
+    return {"status": "ok", "application_id": updated_app.id}
+

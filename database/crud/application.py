@@ -15,27 +15,45 @@ from database.models import (
 
 
 def validate_enum_fields(data: dict) -> dict:
-    enum_fields = {
+    """
+    Валидирует поля Enum. Для полей, которые являются списками, проверяет каждый элемент.
+    """
+    single_enum_fields = {
         "level": LevelEnum,
-        "preferred_class_format": PreferredClassFormatEnum,
-        "preferred_study_mode": PreferredStudyModeEnum,
         "reference_source": ReferenceSourceEnum,
     }
 
+    list_enum_fields = {
+        "preferred_class_format": PreferredClassFormatEnum,
+        "preferred_study_mode": PreferredStudyModeEnum,
+        "previous_experience": PreviousExperienceEnum,
+    }
+
     validated = {}
-    for field, enum_cls in enum_fields.items():
-        if data.get(field) is None:
+
+    # одиночные поля
+    for field, enum_cls in single_enum_fields.items():
+        value = data.get(field)
+        if value is None:
             validated[field] = None
             continue
         try:
-            validated[field] = enum_cls(data[field])
+            validated[field] = enum_cls(value)
         except ValueError:
-            raise ValueError(f"Недопустимое значение поля '{field}': {data[field]}")
+            raise ValueError(f"Недопустимое значение поля '{field}': {value}")
 
-    # previous_experience (список)
-    prev_exp = data.get("previous_experience")
-    if prev_exp is not None:
-        validated["previous_experience"] = [PreviousExperienceEnum(item) for item in prev_exp]
+    # поля-списки
+    for field, enum_cls in list_enum_fields.items():
+        values = data.get(field)
+        if values is None:
+            validated[field] = None
+            continue
+        if not isinstance(values, list):
+            raise ValueError(f"Поле '{field}' должно быть списком, got {type(values).__name__}")
+        try:
+            validated[field] = [enum_cls(item) for item in values]
+        except ValueError:
+            raise ValueError(f"Недопустимое значение в поле '{field}': {values}")
 
     return validated
 
@@ -46,8 +64,8 @@ async def create_application(
     applicant_name: str,
     phone_number: str,
     applicant_age: int,
-    preferred_class_format: str,
-    preferred_study_mode: str,
+    preferred_class_format: list[str],
+    preferred_study_mode: list[str],
     level: str | None,
     possible_scheduling: list[dict[str, object]],
     reference_source: str | None,
@@ -97,8 +115,8 @@ async def update_application_by_id(
     applicant_name: str,
     phone_number: str,
     applicant_age: int,
-    preferred_class_format: str,
-    preferred_study_mode: str,
+    preferred_class_format: list[str],
+    preferred_study_mode: list[str],
     level: str | None,
     possible_scheduling: list[dict[str, object]],
     reference_source: str | None,
@@ -163,7 +181,8 @@ async def read_application_by_id(session: AsyncSession, id: int):
 async def read_application_by_user_id(session: AsyncSession, user_id: int):
     try:
         result = await session.execute(select(Application).where(Application.user_id == user_id))
-        return result.scalar_one_or_none()
+        return result.scalars().all()  # список заявок
     except SQLAlchemyError as e:
         logger.error("Database error in read_application_by_user_id: %s", e)
         raise e
+
