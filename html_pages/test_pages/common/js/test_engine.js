@@ -1,47 +1,28 @@
 // =======================
-// ✅ Telegram WebApp Integration with Visual Debug
+// ✅ Telegram WebApp Integration (clean version)
 // =======================
 function initializeTelegramWebApp() {
   const tg = window.Telegram?.WebApp;
 
-  // Create a visual debug element
-  createDebugPanel();
-
   if (!tg) {
-    showDebugMessage('❌ Telegram WebApp object not found - running outside Telegram?');
     createFallbackTelegramField();
     return;
   }
 
-  showDebugMessage('✅ Telegram WebApp object found');
-
-  // Try multiple data sources
   const userFromUnsafe = tg.initDataUnsafe?.user;
   const userFromInitData = tg.initData?.user;
   const user = userFromUnsafe || userFromInitData;
 
   if (user?.id) {
-    showDebugMessage(`✅ Telegram user ID found: ${user.id}`);
     setTelegramUserData(user.id);
 
-    // Try to pre-fill username
+    // Автоподстановка имени пользователя
     const usernameInput = document.getElementById('username');
     if (usernameInput && !usernameInput.value.trim()) {
       const userName = user.username || user.first_name || `user_${user.id}`;
       usernameInput.value = userName;
-      showDebugMessage(`✅ Pre-filled username: ${userName}`);
     }
   } else {
-    showDebugMessage('❌ No user data in initDataUnsafe or initData');
-
-    // Show what data we DO have
-    if (tg.initDataUnsafe) {
-      showDebugMessage(`📊 initDataUnsafe keys: ${Object.keys(tg.initDataUnsafe).join(', ')}`);
-    }
-    if (tg.initData) {
-      showDebugMessage(`📊 initData available: ${tg.initData ? 'yes' : 'no'}`);
-    }
-
     createFallbackTelegramField();
   }
 }
@@ -59,7 +40,6 @@ function setTelegramUserData(telegramId) {
     if (form) {
       form.appendChild(telegramIdField);
     } else {
-      // Insert near the submit button as fallback
       const submitBtn = document.querySelector('button[type="submit"], #submit-test');
       if (submitBtn) {
         submitBtn.parentNode.insertBefore(telegramIdField, submitBtn);
@@ -70,102 +50,27 @@ function setTelegramUserData(telegramId) {
   }
 
   telegramIdField.value = telegramId;
-  showDebugMessage(`✅ Set telegram_id field to: ${telegramId}`);
-
-  // Verify it was set
-  setTimeout(() => {
-    const verifyField = document.getElementById('telegram-id');
-    showDebugMessage(`🔍 Verification - telegram-id value: ${verifyField?.value}`);
-  }, 500);
 }
 
 function createFallbackTelegramField() {
-  showDebugMessage('🔄 Creating fallback telegram_id field');
   let telegramIdField = document.getElementById('telegram-id');
-
   if (!telegramIdField) {
     telegramIdField = document.createElement('input');
     telegramIdField.type = 'hidden';
     telegramIdField.id = 'telegram-id';
     telegramIdField.name = 'telegram_id';
-    telegramIdField.value = 'unknown'; // Fallback value
-
-    const form = document.getElementById('testForm') || document.querySelector('form');
-    if (form) {
-      form.appendChild(telegramIdField);
-    } else {
-      document.body.appendChild(telegramIdField);
-    }
+    telegramIdField.value = '';
+    document.body.appendChild(telegramIdField);
   }
 }
 
-function createDebugPanel() {
-  // Remove existing debug panel
-  const existingPanel = document.getElementById('telegram-debug-panel');
-  if (existingPanel) existingPanel.remove();
-
-  // Create debug panel
-  const debugPanel = document.createElement('div');
-  debugPanel.id = 'telegram-debug-panel';
-  debugPanel.style.cssText = `
-    position: fixed;
-    top: 10px;
-    right: 10px;
-    background: rgba(0,0,0,0.8);
-    color: white;
-    padding: 10px;
-    border-radius: 5px;
-    font-family: monospace;
-    font-size: 12px;
-    max-width: 300px;
-    max-height: 200px;
-    overflow-y: auto;
-    z-index: 10000;
-    border: 2px solid red;
-  `;
-
-  const debugTitle = document.createElement('div');
-  debugTitle.textContent = '🔧 Telegram Debug';
-  debugTitle.style.cssText = 'font-weight: bold; margin-bottom: 5px; border-bottom: 1px solid white; padding-bottom: 3px;';
-
-  const debugContent = document.createElement('div');
-  debugContent.id = 'telegram-debug-content';
-
-  debugPanel.appendChild(debugTitle);
-  debugPanel.appendChild(debugContent);
-  document.body.appendChild(debugPanel);
-
-  window.showDebugMessage = function(message) {
-    const content = document.getElementById('telegram-debug-content');
-    if (content) {
-      const messageElement = document.createElement('div');
-      messageElement.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
-      messageElement.style.marginBottom = '2px';
-      content.appendChild(messageElement);
-      content.scrollTop = content.scrollHeight;
-    }
-  };
-}
-
-// Initialize when DOM is ready
+// Инициализация при загрузке DOM
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', initializeTelegramWebApp);
 } else {
   initializeTelegramWebApp();
 }
 
-// Also add debug to submit to see final state
-const originalSubmitHandler = document.getElementById('submit-test')?.onclick;
-if (document.getElementById('submit-test')) {
-  document.getElementById('submit-test').onclick = function(e) {
-    const telegramField = document.getElementById('telegram-id');
-    showDebugMessage(`🚀 SUBMITTING - telegram_id: ${telegramField?.value}`);
-
-    if (originalSubmitHandler) {
-      return originalSubmitHandler.call(this, e);
-    }
-  };
-}
 // =======================
 // ⚙️ Основная логика test_engine.js
 // =======================
@@ -180,7 +85,6 @@ const DEFAULT_OPTIONS = {
 export function initTest(level, taskData = {}, options = {}) {
   const cfg = { ...DEFAULT_OPTIONS, ...options };
   const state = { level, taskData, cfg, lastPayload: null, lastResult: null };
-
   attachButtonHandlers(state);
   return state;
 }
