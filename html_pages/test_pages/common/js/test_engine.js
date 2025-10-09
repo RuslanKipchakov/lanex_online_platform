@@ -1,22 +1,30 @@
 // =======================
-// ✅ Telegram WebApp Integration (без логов)
+// ✅ Telegram WebApp Integration (устойчивая версия, без логов)
 // =======================
-
 const tg = window.Telegram?.WebApp;
 
-if (tg?.initDataUnsafe?.user?.id) {
-  const existing = document.getElementById("telegram-id");
-  if (existing) {
-    existing.value = tg.initDataUnsafe.user.id;
-  } else {
+function setTelegramId() {
+  const el = document.getElementById("telegram-id");
+  if (tg?.initDataUnsafe?.user?.id && el) {
+    el.value = tg.initDataUnsafe.user.id;
+  } else if (tg?.initDataUnsafe?.user?.id && !el) {
     const hiddenInput = document.createElement("input");
     hiddenInput.type = "hidden";
     hiddenInput.id = "telegram-id";
+    hiddenInput.name = "telegram_id";
     hiddenInput.value = tg.initDataUnsafe.user.id;
     document.body.appendChild(hiddenInput);
   }
 }
 
+// Попытка сразу
+setTelegramId();
+
+// Повторяем при готовности WebApp
+if (tg) tg.onEvent("ready", setTelegramId);
+
+// Делаем финальную попытку через 1 секунду (страховка)
+setTimeout(setTelegramId, 1000);
 
 // =======================
 // ⚙️ Основная логика test_engine.js
