@@ -1,9 +1,7 @@
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, WebAppInfo
 import time
 
-# BASE_URL = "https://innovative-intuition-mynewenv.up.railway.app"
-# BASE_URL = "https://lanexonlineplatform-production.up.railway.app"
-BASE_URL = "https://unsupplied-martina-theoretically.ngrok-free.dev"
+BASE_URL = "https://lanexonlineplatform-mynewenv.up.railway.app"
 
 
 def versioned_url(path: str) -> str:
