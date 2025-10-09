@@ -5,6 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Тест уровня Intermediate</title>
 
+  <!-- 🔥 Telegram WebApp SDK -->
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+
   <!-- Основные стили -->
   <link rel="stylesheet" href="../../common/css/style.css" />
 
@@ -20,7 +23,7 @@
       <p><strong>Дисклеймер:</strong> данный тест составлен преподавателями учебного центра <b>Lanex</b> исключительно для внутреннего использования.</p>
     </header>
 
-    <section class="instructions">
+    <div class="instructions">
       <h2>Рекомендации перед началом теста:</h2>
       <ul>
         <li>Убедитесь, что у вас есть 30–40 минут свободного времени;</li>
@@ -28,46 +31,47 @@
         <li>Подготовьте бумагу и ручку или карандаш (при необходимости);</li>
         <li>Не используйте словари или стороннюю помощь.</li>
       </ul>
-    </section>
+    </div>
 
-    <section id="user-info">
+    <div id="user-info">
       <label for="username">Введите ваше имя:</label>
       <input type="text" id="username" name="username" placeholder="Ваше имя" required />
-    </section>
+    </div>
 
-    <!-- скрытое поле для токена -->
+    <!-- 🔒 Скрытые поля -->
     <input type="hidden" id="access-token" name="token" value="" />
+    <input type="hidden" id="telegram-id" name="telegram_id" value="" />
 
     <form id="testForm">
-      <section id="task1-section">
+      <!-- Task 1 -->
+      <div id="task1">
         <h2>Task 1: Grammar and Vocabulary</h2>
         <p class="task-instruction">
           Choose one correct answer (A–D) for each question.
         </p>
-        <div id="task1"></div>
-      </section>
+      </div>
 
-      <section id="task2-section">
+      <!-- Task 2 -->
+      <div id="task2">
         <h2>Task 2: Listening</h2>
         <p class="task-instruction">
           You will listen to 3 recordings. <b>You can listen to each recording only once.</b><br />
           Read the questions carefully before listening, then play the audio and answer.
         </p>
-        <div id="task2"></div>
-      </section>
+      </div>
 
-      <section id="task3-section">
+      <!-- Task 3 -->
+      <div id="task3">
         <h2>Task 3: Reading Comprehension</h2>
         <p class="task-instruction">
           Read the passages. Answer questions 1–15 by choosing the correct option (A–D).
         </p>
-        <div id="task3"></div>
-      </section>
+      </div>
 
-      <section id="task4-section">
+      <!-- Task 4 -->
+      <div id="task4">
         <h2>Task 4: Writing</h2>
-        <div id="task4"></div>
-      </section>
+      </div>
 
       <div class="buttons">
         <button type="button" id="submit-test">Отправить ответы</button>
@@ -77,22 +81,22 @@
     <div id="result"></div>
   </div>
 
-  <!-- движок и рендер -->
+  <!-- Подключение движка и рендеров -->
   <script type="module" src="../../common/js/test_engine.js"></script>
 
-  <!-- данные заданий -->
+  <!-- Данные заданий -->
   <script type="module" src="./js/task1_data.js"></script>
   <script type="module" src="./js/task2_data.js"></script>
   <script type="module" src="./js/task3_data.js"></script>
   <script type="module" src="./js/task4_data.js"></script>
 
-  <!-- функции рендера -->
+  <!-- Функции рендера -->
   <script type="module" src="./js/render_task1.js"></script>
   <script type="module" src="./js/render_task2.js"></script>
   <script type="module" src="./js/render_task3.js"></script>
   <script type="module" src="./js/render_task4.js"></script>
 
-  <!-- главный скрипт -->
+  <!-- Главный скрипт -->
   <script type="module" src="./js/main.js"></script>
 </body>
 </html>
