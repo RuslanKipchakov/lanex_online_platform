@@ -1,31 +1,74 @@
 // =======================
-// ✅ Telegram WebApp Integration (устойчивая версия, без логов)
+// ✅ Improved Telegram WebApp Integration
 // =======================
-const tg = window.Telegram?.WebApp;
+function initializeTelegramWebApp() {
+  const tg = window.Telegram?.WebApp;
 
-function setTelegramId() {
-  const el = document.getElementById("telegram-id");
-  if (tg?.initDataUnsafe?.user?.id && el) {
-    el.value = tg.initDataUnsafe.user.id;
-  } else if (tg?.initDataUnsafe?.user?.id && !el) {
-    const hiddenInput = document.createElement("input");
-    hiddenInput.type = "hidden";
-    hiddenInput.id = "telegram-id";
-    hiddenInput.name = "telegram_id";
-    hiddenInput.value = tg.initDataUnsafe.user.id;
-    document.body.appendChild(hiddenInput);
+  if (!tg) {
+    console.log('Telegram WebApp not available');
+    return;
+  }
+
+  // Wait for WebApp to be ready
+  if (tg.isReady) {
+    setTelegramUserData(tg);
+  } else {
+    tg.ready();
+    tg.onEvent('ready', () => setTelegramUserData(tg));
+  }
+
+  // Additional safety check
+  setTimeout(() => setTelegramUserData(tg), 2000);
+}
+
+function setTelegramUserData(tg) {
+  const user = tg.initDataUnsafe?.user;
+
+  if (user?.id) {
+    console.log('Telegram user ID found:', user.id);
+
+    // Try to find existing hidden field
+    let telegramIdField = document.getElementById('telegram-id');
+
+    if (!telegramIdField) {
+      // Create hidden field if it doesn't exist
+      telegramIdField = document.createElement('input');
+      telegramIdField.type = 'hidden';
+      telegramIdField.id = 'telegram-id';
+      telegramIdField.name = 'telegram_id';
+
+      // Insert it into the form
+      const form = document.getElementById('testForm');
+      if (form) {
+        form.appendChild(telegramIdField);
+      } else {
+        document.body.appendChild(telegramIdField);
+      }
+    }
+
+    // Set the value
+    telegramIdField.value = user.id;
+
+    // Also try to pre-fill username if empty
+    const usernameInput = document.getElementById('username');
+    if (usernameInput && !usernameInput.value.trim()) {
+      const userName = user.username || user.first_name;
+      if (userName) {
+        usernameInput.value = userName;
+        console.log('Prefilled username:', userName);
+      }
+    }
+  } else {
+    console.log('No Telegram user data available');
   }
 }
 
-// Попытка сразу
-setTelegramId();
-
-// Повторяем при готовности WebApp
-if (tg) tg.onEvent("ready", setTelegramId);
-
-// Делаем финальную попытку через 1 секунду (страховка)
-setTimeout(setTelegramId, 1000);
-
+// Initialize when DOM is ready
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initializeTelegramWebApp);
+} else {
+  initializeTelegramWebApp();
+}
 // =======================
 // ⚙️ Основная логика test_engine.js
 // =======================
