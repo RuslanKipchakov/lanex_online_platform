@@ -105,6 +105,7 @@ async def check_test(submission: SubmissionModel, request: Request):
                 await create_test_result(
                     session=session,
                     user_id=telegram_id,
+                    test_taker=safe_name,
                     level=level,
                     closed_answers=closed_answers,
                     open_answers=open_answers or None,
