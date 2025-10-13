@@ -5,41 +5,66 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from logging_config import logger
 from database.models import TestResult, LevelEnum
 
+
 async def create_test_result(
-        session: AsyncSession,
-        user_id: int,
-        level: str,
-        closed_answers: dict,
-        open_answers: dict,
-        score: dict,
-        pdf_path: str,
+    session: AsyncSession,
+    user_id: int,
+    test_taker: str,
+    level: str,
+    closed_answers: dict | None,
+    open_answers: dict | None,
+    score: dict | None,
+    pdf_path: str,
 ):
+    """Создание записи о результате теста."""
     try:
-        level = LevelEnum(level)
-    except ValueError:
-        raise ValueError(f"Недопустимый уровень: {level}")
-    try:
+        try:
+            level_enum = LevelEnum(level)
+        except ValueError:
+            raise ValueError(f"Недопустимый уровень теста: {level}")
+
         new_test_result = TestResult(
             user_id=user_id,
-            level=level,
+            test_taker=test_taker,
+            level=level_enum,
             closed_answers=closed_answers,
             open_answers=open_answers,
             score=score,
-            pdf_path=pdf_path
+            pdf_path=pdf_path,
         )
         session.add(new_test_result)
         await session.commit()
+        await session.refresh(new_test_result)
+
+        return new_test_result
 
     except SQLAlchemyError as e:
-        logger.error("Database error in create_test_result: %s", e)
+        await session.rollback()
+        logger.error("Ошибка при создании TestResult: %s", e)
         raise e
 
 
-async def read_test_result_by_id(session: AsyncSession, id: int):
+async def read_test_result_by_id(session: AsyncSession, id: int) -> TestResult | None:
+    """Чтение результата теста по ID."""
     try:
-        result = await session.execute(select(TestResult).where(TestResult.id == id))
-        test_result = result.scalar_one_or_none()
-        return test_result
+        result = await session.execute(
+            select(TestResult).where(TestResult.id == id)
+        )
+        return result.scalar_one_or_none()
+
     except SQLAlchemyError as e:
-        logger.error("Database error in read_test_result_by_id: %s", e)
+        logger.error("Ошибка при чтении TestResult по ID: %s", e)
+        raise e
+
+
+async def read_test_results_by_user(session: AsyncSession, user_id: int) -> list[TestResult]:
+    """Чтение всех результатов тестов пользователя."""
+    try:
+        result = await session.execute(
+            select(TestResult).where(TestResult.user_id == user_id)
+        )
+        return result.scalars().all()
+
+    except SQLAlchemyError as e:
+        logger.error("Ошибка при чтении TestResult по user_id: %s", e)
         raise e
