@@ -2,12 +2,14 @@ from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel
 from typing import Dict, Any
 from utilities.check_function import check_test_results
+from utilities.pdf_generation import generate_test_report  # 🆕
 from database.base import AsyncSessionLocal
 from database.crud.user_session import read_user_session
 from database.crud.test_result import create_test_result
 from database.models import LevelEnum
 import re
 import logging
+import os
 
 # импорт логгера из logging_config.py
 from logging_config import logger
@@ -99,7 +101,34 @@ async def check_test(submission: SubmissionModel, request: Request):
                 except Exception:
                     pass
 
-        # 6️⃣ Сохраняем результат в БД
+        # Добавляем total score, если есть
+        if "total" in check_result:
+            try:
+                score["total"] = int(check_result["total"])
+            except Exception:
+                pass
+
+        # 6️⃣ Генерируем PDF отчёт (синхронно)
+        try:
+            output_dir = "/tmp/reports"  # безопасная временная папка для Railway
+            os.makedirs(output_dir, exist_ok=True)
+
+            pdf_path = generate_test_report(
+                test_taker=safe_name,
+                level=level.value,
+                closed_answers=closed_answers,
+                open_answers=open_answers or None,
+                score=score,
+                output_dir=output_dir,
+            )
+
+            logger.info(f"📄 PDF отчёт успешно создан: {pdf_path}")
+
+        except Exception as e:
+            logger.exception("❌ Ошибка при генерации PDF")
+            pdf_path = "pdf_generation_failed"
+
+        # 7️⃣ Сохраняем результат в БД
         async with AsyncSessionLocal() as session:
             try:
                 await create_test_result(
@@ -110,7 +139,7 @@ async def check_test(submission: SubmissionModel, request: Request):
                     closed_answers=closed_answers,
                     open_answers=open_answers or None,
                     score=score,
-                    pdf_path="pending",
+                    pdf_path=pdf_path,
                 )
                 logger.info(f"✅ Результат теста сохранён для {safe_name} ({telegram_id})")
             except ValueError as e:
@@ -123,7 +152,8 @@ async def check_test(submission: SubmissionModel, request: Request):
         return {
             "status": "ok",
             "username_used": safe_name,
-            "result": check_result
+            "pdf_path": pdf_path,  # 🆕 возвращаем путь для отладки
+            "result": check_result,
         }
 
     except HTTPException:
