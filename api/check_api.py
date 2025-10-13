@@ -2,7 +2,8 @@ from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel
 from typing import Dict, Any
 from utilities.check_function import check_test_results
-from utilities.pdf_generation import generate_test_report  # 🆕
+from utilities.pdf_generation import generate_test_report
+from utilities.dropbox_utils import upload_to_dropbox  # 🆕
 from database.base import AsyncSessionLocal
 from database.crud.user_session import read_user_session
 from database.crud.test_result import create_test_result
@@ -11,7 +12,6 @@ import re
 import logging
 import os
 
-# импорт логгера из logging_config.py
 from logging_config import logger
 
 router = APIRouter(prefix="/api")
@@ -35,7 +35,7 @@ async def check_test(submission: SubmissionModel, request: Request):
     telegram_id = data.get("telegram_id")
 
     try:
-        # 1️⃣ Проверяем, что есть хотя бы один ответ
+        # 1️⃣ Проверка, что форма не пуста
         has_any_answer = any(
             (isinstance(v, list) and v) or (isinstance(v, str) and v.strip())
             for task in answers.values()
@@ -45,7 +45,7 @@ async def check_test(submission: SubmissionModel, request: Request):
             logger.warning(f"Пустая форма от пользователя {telegram_id}")
             return {"status": "empty_form"}
 
-        # 2️⃣ Проверяем имя
+        # 2️⃣ Определение имени пользователя
         safe_name = re.sub(r"[^a-zA-Zа-яА-Я0-9_\-\s]", "", username)
         if not safe_name.strip():
             async with AsyncSessionLocal() as session:
@@ -108,9 +108,9 @@ async def check_test(submission: SubmissionModel, request: Request):
             except Exception:
                 pass
 
-        # 6️⃣ Генерируем PDF отчёт (синхронно)
+        # 6️⃣ Генерируем PDF отчёт
         try:
-            output_dir = "/tmp/reports"  # безопасная временная папка для Railway
+            output_dir = "/tmp/reports"  # временная папка для Railway
             os.makedirs(output_dir, exist_ok=True)
 
             pdf_path = generate_test_report(
@@ -126,9 +126,19 @@ async def check_test(submission: SubmissionModel, request: Request):
 
         except Exception as e:
             logger.exception("❌ Ошибка при генерации PDF")
-            pdf_path = "pdf_generation_failed"
+            pdf_path = None
 
-        # 7️⃣ Сохраняем результат в БД
+        # 7️⃣ Загружаем PDF в Dropbox
+        dropbox_path = None
+        if pdf_path and os.path.exists(pdf_path):
+            try:
+                dropbox_path = upload_to_dropbox(pdf_path)
+                logger.info(f"☁️ Файл загружен в Dropbox: {dropbox_path}")
+            except Exception as e:
+                logger.exception("⚠️ Ошибка при загрузке в Dropbox")
+                dropbox_path = "upload_failed"
+
+        # 8️⃣ Сохраняем результат в БД
         async with AsyncSessionLocal() as session:
             try:
                 await create_test_result(
@@ -139,7 +149,7 @@ async def check_test(submission: SubmissionModel, request: Request):
                     closed_answers=closed_answers,
                     open_answers=open_answers or None,
                     score=score,
-                    pdf_path=pdf_path,
+                    pdf_path=dropbox_path or pdf_path or "no_pdf",
                 )
                 logger.info(f"✅ Результат теста сохранён для {safe_name} ({telegram_id})")
             except ValueError as e:
@@ -152,7 +162,7 @@ async def check_test(submission: SubmissionModel, request: Request):
         return {
             "status": "ok",
             "username_used": safe_name,
-            "pdf_path": pdf_path,  # 🆕 возвращаем путь для отладки
+            "dropbox_path": dropbox_path,
             "result": check_result,
         }
 
