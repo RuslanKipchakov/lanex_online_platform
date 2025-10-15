@@ -79,6 +79,7 @@ async def preview_application_data(request: Request):
     Принимает любые сырые JSON-данные без схемы валидации.
     """
     data = await request.json()
+    print(data)
     return {
         "message": "✅ Данные успешно получены",
         "received_data": data,
