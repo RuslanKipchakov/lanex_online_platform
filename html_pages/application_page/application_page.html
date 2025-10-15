@@ -11,6 +11,8 @@
     <h1>Заявка на обучение</h1>
 
     <form id="applicationForm">
+      <input type="hidden" id="telegram_id" name="telegram_id" value="" />
+
       <!-- Имя -->
       <label for="applicant_name">Имя *</label>
       <input type="text" id="applicant_name" name="applicant_name" required minlength="2" maxlength="50" />
@@ -101,6 +103,7 @@
   </div>
 
   <!-- Подключаем только один JS -->
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <script type="module" src="js/application_main.js"></script>
 
   <!-- Модальное окно -->

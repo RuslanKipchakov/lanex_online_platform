@@ -1,3 +1,24 @@
+// ==================== Telegram WebApp Integration ====================
+function initializeTelegramWebApp() {
+  const tg = window.Telegram?.WebApp;
+  if (!tg) return; // Telegram SDK не найден — пропускаем
+
+  const user = tg.initDataUnsafe?.user || tg.initData?.user;
+  if (user?.id) {
+    const idField = document.getElementById("telegram_id");
+    if (idField) idField.value = user.id;
+  }
+
+  // Разворачиваем окно
+  if (typeof tg.expand === "function") tg.expand();
+}
+
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", initializeTelegramWebApp);
+} else {
+  initializeTelegramWebApp();
+}
+
 document.addEventListener("DOMContentLoaded", () => {
   const tg = window.Telegram?.WebApp;
   if (tg && typeof tg.expand === "function") tg.expand();
@@ -110,6 +131,7 @@ document.addEventListener("DOMContentLoaded", () => {
       need_ielts: fd.get("need_ielts") === "true",
       studied_at_lanex: fd.get("studied_at_lanex") === "true",
       previous_experience: fd.getAll("previous_experience"),
+      telegram_id: Number(fd.get("telegram_id")) || null,
     };
 
     try {
