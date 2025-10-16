@@ -1,35 +1,160 @@
-import os
 from datetime import datetime
+import os
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import A4
-from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib.styles import ParagraphStyle
+from reportlab.lib.units import cm
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
-from reportlab.pdfbase.cidfonts import UnicodeCIDFont
 from reportlab.pdfbase import pdfmetrics
+from reportlab.pdfbase.ttfonts import TTFont
+from reportlab.pdfbase.cidfonts import UnicodeCIDFont
 
-pdfmetrics.registerFont(UnicodeCIDFont("HeiseiKakuGo-W5"))
+# === Регистрация шрифтов ===
+FONT_PATH = os.path.join("fonts", "DejaVuSans.ttf")
+FONT_BOLD_PATH = os.path.join("fonts", "DejaVuSans-Bold.ttf")
+
+if os.path.exists(FONT_PATH) and os.path.exists(FONT_BOLD_PATH):
+    pdfmetrics.registerFont(TTFont("DejaVuSans", FONT_PATH))
+    pdfmetrics.registerFont(TTFont("DejaVuSans-Bold", FONT_BOLD_PATH))
+else:
+    pdfmetrics.registerFont(UnicodeCIDFont("HeiseiKakuGo-W5"))
 
 
 def _add_background_and_border(canvas, doc):
     """Фон и рамка для каждой страницы"""
+    from reportlab.lib.pagesizes import A4
     canvas.saveState()
     canvas.setFillColorRGB(0.96, 0.97, 1)
     canvas.rect(0, 0, A4[0], A4[1], fill=1, stroke=0)
-
     margin = 20
     canvas.setLineWidth(1)
     canvas.setStrokeColorRGB(0.7, 0.7, 0.8)
-    canvas.rect(
-        margin,
-        margin,
-        A4[0] - 2 * margin,
-        A4[1] - 2 * margin,
-        fill=0,
-        stroke=1,
-    )
+    canvas.rect(margin, margin, A4[0] - 2 * margin, A4[1] - 2 * margin, fill=0, stroke=1)
     canvas.restoreState()
 
 
+def generate_application_pdf(
+    applicant_name: str,
+    phone_number: str,
+    applicant_age: int,
+    preferred_class_format: list[str],
+    preferred_study_mode: list[str],
+    level: str | None,
+    possible_scheduling: list[dict[str, list[str]]],
+    reference_source: str | None,
+    need_ielts: bool,
+    studied_at_lanex: bool,
+    previous_experience: list[str] | None,
+    telegram_id: int,
+    username: str,
+    notes: str = "",
+    output_dir: str | None = None,
+) -> str:
+    """
+    Генерирует PDF-заявку на русском языке с датой и временем в имени файла.
+    """
+
+    # === Настройка выходного пути ===
+    os.makedirs(output_dir, exist_ok=True)
+    timestamp = datetime.now().strftime("%d-%m-%Y_%H%M%S")
+    filename = f"{username}_{timestamp}_{telegram_id}.pdf"
+    filepath = os.path.join(output_dir, filename)
+
+    # === Документ ===
+    doc = SimpleDocTemplate(
+        filepath,
+        pagesize=A4,
+        rightMargin=2 * cm,
+        leftMargin=2 * cm,
+        topMargin=1.5 * cm,
+        bottomMargin=1.5 * cm,
+    )
+
+    # === Стили ===
+    title_style = ParagraphStyle(
+        "Title",
+        fontName="DejaVuSans-Bold",
+        fontSize=16,
+        alignment=1,
+        spaceAfter=14,
+    )
+
+    normal_style = ParagraphStyle(
+        "Normal",
+        fontName="DejaVuSans",
+        fontSize=11,
+        leading=14,
+    )
+
+    # === Содержимое ===
+    elements = [Paragraph("Форма заявки Lanex", title_style), Spacer(1, 12)]
+
+    # Таблица основных данных
+    data = [
+        ["Полное имя", applicant_name],
+        ["Номер телефона", phone_number],
+        ["Возраст", str(applicant_age)],
+        ["Формат занятий", ", ".join(preferred_class_format)],
+        ["Режим обучения", ", ".join(preferred_study_mode)],
+        ["Уровень", level or "—"],
+        ["Источник информации", reference_source or "—"],
+        ["Необходим IELTS", "Да" if need_ielts else "Нет"],
+        ["Ранее обучался(-ась) в Lanex", "Да" if studied_at_lanex else "Нет"],
+        ["Предыдущий опыт изучения", ", ".join(previous_experience) if previous_experience else "—"],
+    ]
+
+    table = Table(data, colWidths=[6 * cm, 9 * cm])
+    table.setStyle(
+        TableStyle(
+            [
+                ("BOX", (0, 0), (-1, -1), 1, colors.black),
+                ("INNERGRID", (0, 0), (-1, -1), 0.5, colors.grey),
+                ("FONTNAME", (0, 0), (-1, -1), "DejaVuSans"),
+                ("VALIGN", (0, 0), (-1, -1), "TOP"),
+                ("BACKGROUND", (0, 0), (0, -1), colors.whitesmoke),
+            ]
+        )
+    )
+
+    elements.append(table)
+    elements.append(Spacer(1, 12))
+
+    # === Таблица расписания ===
+    elements.append(Paragraph("Доступное расписание", title_style))
+    schedule_data = [["День", "Предпочтительные часы"]]
+
+    for slot in possible_scheduling:
+        day = slot.get("day", "—")
+        times = ", ".join(slot.get("times", []))
+        schedule_data.append([day, times])
+
+    schedule_table = Table(schedule_data, colWidths=[4 * cm, 11 * cm])
+    schedule_table.setStyle(
+        TableStyle(
+            [
+                ("BOX", (0, 0), (-1, -1), 1, colors.black),
+                ("INNERGRID", (0, 0), (-1, -1), 0.5, colors.grey),
+                ("FONTNAME", (0, 0), (-1, -1), "DejaVuSans"),
+                ("VALIGN", (0, 0), (-1, -1), "TOP"),
+                ("BACKGROUND", (0, 0), (-1, 0), colors.lightgrey),
+            ]
+        )
+    )
+
+    elements.append(schedule_table)
+    elements.append(Spacer(1, 24))
+
+    # === Заметки администратора ===
+    elements.append(Paragraph("<b>Заметки администратора:</b>", normal_style))
+    elements.append(Paragraph(notes or "—", normal_style))
+
+    # === Сборка ===
+    doc.build(elements, onFirstPage=_add_background_and_border, onLaterPages=_add_background_and_border)
+
+    return filepath
+
+
+# === PDF отчёта о тесте ===
 def generate_test_report(
     test_taker: str,
     level: str,
@@ -37,21 +162,15 @@ def generate_test_report(
     open_answers: dict | None,
     score: dict,
     output_dir: str | None = None,
-):
+) -> str:
     """
     Генерация PDF-отчета о тесте.
-    :param test_taker: имя пользователя
-    :param level: уровень теста
-    :param closed_answers: словарь с закрытыми вопросами
-    :param open_answers: словарь с открытыми вопросами (опционально)
-    :param score: словарь с баллами (включая total)
-    :param output_dir: путь к папке, где сохранить файл
     """
     reports_dir = output_dir or os.path.join(os.getcwd(), "generated_reports")
     os.makedirs(reports_dir, exist_ok=True)
 
-    date_str = datetime.now().strftime("%Y-%m-%d")
-    filename = f"{test_taker}_{level}_{date_str}.pdf".replace(" ", "_")
+    date_str = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    filename = f"TEST_REPORT_{test_taker}_{level}_{date_str}.pdf".replace(" ", "_")
     filepath = os.path.join(reports_dir, filename)
 
     doc = SimpleDocTemplate(filepath, pagesize=A4)
@@ -85,18 +204,13 @@ def generate_test_report(
         data = [["Question", "Answer", "Status"]]
         for q_num, q_data in questions.items():
             data.append([q_num, q_data["answer"], q_data["status"]])
-
         t = Table(data, colWidths=[80, 250, 100])
-        t.setStyle(
-            TableStyle(
-                [
-                    ("BACKGROUND", (0, 0), (-1, 0), colors.lightgrey),
-                    ("GRID", (0, 0), (-1, -1), 0.5, colors.grey),
-                    ("FONTNAME", (0, 0), (-1, -1), "HeiseiKakuGo-W5"),
-                    ("ALIGN", (0, 0), (-1, -1), "CENTER"),
-                ]
-            )
-        )
+        t.setStyle(TableStyle([
+            ("BACKGROUND", (0, 0), (-1, 0), colors.lightgrey),
+            ("GRID", (0, 0), (-1, -1), 0.5, colors.grey),
+            ("FONTNAME", (0, 0), (-1, -1), "HeiseiKakuGo-W5"),
+            ("ALIGN", (0, 0), (-1, -1), "CENTER"),
+        ]))
         elements.append(Paragraph(f"<b>{task}</b>", info_style))
         elements.append(t)
         if task in score:
@@ -113,70 +227,22 @@ def generate_test_report(
                 elements.append(Spacer(1, 6))
             elements.append(Spacer(1, 8))
 
-            elements.append(Paragraph("Teacher's notes:", info_style))
-            notes_box = Table(
-                [[" " * 100]],
-                colWidths=[440],
-                rowHeights=[60],
-                style=TableStyle(
-                    [
-                        ("BOX", (0, 0), (-1, -1), 0.8, colors.grey),
-                        ("VALIGN", (0, 0), (-1, -1), "TOP"),
-                        ("LEFTPADDING", (0, 0), (-1, -1), 6),
-                        ("RIGHTPADDING", (0, 0), (-1, -1), 6),
-                        ("TOPPADDING", (0, 0), (-1, -1), 4),
-                    ]
-                ),
-            )
-            elements.append(notes_box)
-            elements.append(Spacer(1, 20))
-
-    # --- Feedback section ---
-    elements.append(Spacer(1, 20))
-    elements.append(Paragraph("<b>Overall Feedback:</b>", info_style))
-    feedback_box = Table(
-        [[" " * 100]],
-        colWidths=[440],
-        rowHeights=[100],
-        style=TableStyle(
-            [
-                ("BOX", (0, 0), (-1, -1), 0.8, colors.grey),
-                ("VALIGN", (0, 0), (-1, -1), "TOP"),
-                ("LEFTPADDING", (0, 0), (-1, -1), 6),
-                ("RIGHTPADDING", (0, 0), (-1, -1), 6),
-                ("TOPPADDING", (0, 0), (-1, -1), 4),
-            ]
-        ),
-    )
-    elements.append(feedback_box)
-    elements.append(Spacer(1, 25))
-
     # --- Total Score ---
     total_score = score.get("total")
     if total_score is not None:
         total_table = Table(
             [[f"TOTAL SCORE: {total_score}"]],
             colWidths=[440],
-            style=TableStyle(
-                [
-                    ("BACKGROUND", (0, 0), (-1, -1), colors.lightblue),
-                    ("BOX", (0, 0), (-1, -1), 1, colors.darkblue),
-                    ("FONTNAME", (0, 0), (-1, -1), "HeiseiKakuGo-W5"),
-                    ("ALIGN", (0, 0), (-1, -1), "CENTER"),
-                    ("FONTSIZE", (0, 0), (-1, -1), 14),
-                    ("TEXTCOLOR", (0, 0), (-1, -1), colors.darkblue),
-                    ("BOTTOMPADDING", (0, 0), (-1, -1), 8),
-                    ("TOPPADDING", (0, 0), (-1, -1), 8),
-                ]
-            ),
+            style=TableStyle([
+                ("BACKGROUND", (0, 0), (-1, -1), colors.lightblue),
+                ("BOX", (0, 0), (-1, -1), 1, colors.darkblue),
+                ("FONTNAME", (0, 0), (-1, -1), "HeiseiKakuGo-W5"),
+                ("ALIGN", (0, 0), (-1, -1), "CENTER"),
+                ("FONTSIZE", (0, 0), (-1, -1), 14),
+                ("TEXTCOLOR", (0, 0), (-1, -1), colors.darkblue),
+            ]),
         )
         elements.append(total_table)
 
-    # --- Build PDF ---
-    doc.build(
-        elements,
-        onFirstPage=_add_background_and_border,
-        onLaterPages=_add_background_and_border,
-    )
-
+    doc.build(elements, onFirstPage=_add_background_and_border, onLaterPages=_add_background_and_border)
     return filepath
