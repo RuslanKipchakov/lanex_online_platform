@@ -32,7 +32,7 @@ class ApplicationSchema(BaseModel):
         use_enum_values = True
 
 
-@router.post("/application")
+@router.post("/applications")
 async def create_application_endpoint(payload: ApplicationSchema, session: AsyncSession = Depends(get_db)):
     """
     Создаёт заявку:
