@@ -135,11 +135,24 @@ def generate_application_pdf(
 
     # === Таблица расписания ===
     elements.append(Paragraph("Доступное расписание", title_style))
-    schedule_data = [["День", "Предпочтительные часы"]]
+
+    # Заголовок таблицы
+    schedule_data = [
+        [
+            Paragraph("<b>День</b>", normal_style),
+            Paragraph("<b>Предпочтительные часы</b>", normal_style),
+        ]
+    ]
+
     for slot in possible_scheduling:
         day = slot.get("day", "—")
-        times = ", ".join(slot.get("times", []))
-        schedule_data.append([day, times])
+        times_list = slot.get("times", [])
+        # Объединяем часы с запятой и пробелом
+        times = ", ".join(times_list) if times_list else "—"
+        # 👇 превращаем текст в Paragraph, чтобы сработал перенос
+        day_paragraph = Paragraph(day, normal_style)
+        times_paragraph = Paragraph(times, normal_style)
+        schedule_data.append([day_paragraph, times_paragraph])
 
     schedule_table = Table(schedule_data, colWidths=[4 * cm, 11 * cm])
     schedule_table.setStyle(TableStyle([
@@ -147,6 +160,7 @@ def generate_application_pdf(
         ("INNERGRID", (0, 0), (-1, -1), 0.5, colors.grey),
         ("FONTNAME", (0, 0), (-1, -1), safe_font("DejaVuSans")),
         ("VALIGN", (0, 0), (-1, -1), "TOP"),
+        ("BACKGROUND", (0, 0), (0, -1), colors.whitesmoke),
         ("BACKGROUND", (0, 0), (-1, 0), colors.lightgrey),
     ]))
 
@@ -154,11 +168,41 @@ def generate_application_pdf(
     elements.append(Spacer(1, 24))
 
     # === Заметки администратора ===
+    elements.append(Spacer(1, 60))  # Отступ перед нижним блоком
+
     elements.append(Paragraph("<b>Заметки администратора:</b>", normal_style))
-    elements.append(Paragraph(notes or "—", normal_style))
+    elements.append(Spacer(1, 6))
+
+    # Если есть текст заметок — вставляем его в одну ячейку
+    if notes:
+        notes_table = Table(
+            [[Paragraph(notes, normal_style)]],
+            colWidths=[15 * cm],
+            rowHeights=[4 * 1.2 * cm],  # Высота под ~4 строки
+        )
+    else:
+        # Пустая таблица из 4 строк для записи от руки
+        notes_table = Table(
+            [[""] for _ in range(4)],
+            colWidths=[15 * cm],
+            rowHeights=[1.2 * cm] * 4,
+        )
+
+    notes_table.setStyle(TableStyle([
+        ("BOX", (0, 0), (-1, -1), 1, colors.black),
+        ("INNERGRID", (0, 0), (-1, -1), 0.5, colors.grey),
+        ("VALIGN", (0, 0), (-1, -1), "TOP"),
+        ("FONTNAME", (0, 0), (-1, -1), safe_font("DejaVuSans")),
+    ]))
+
+    elements.append(notes_table)
 
     # === Сборка PDF ===
-    doc.build(elements, onFirstPage=_add_background_and_border, onLaterPages=_add_background_and_border)
+    doc.build(
+        elements,
+        onFirstPage=_add_background_and_border,
+        onLaterPages=_add_background_and_border,
+    )
     return filepath
 
 
