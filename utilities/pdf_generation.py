@@ -172,7 +172,7 @@ def generate_test_report(
     output_dir: str | None = None,
 ) -> str:
     """
-    Генерация PDF-отчета о тесте.
+    Генерация PDF-отчёта о тесте (улучшенный вариант — с комментариями, статусами и итогами).
     """
     reports_dir = output_dir or os.path.join(os.getcwd(), "generated_reports")
     os.makedirs(reports_dir, exist_ok=True)
@@ -185,6 +185,7 @@ def generate_test_report(
     styles = getSampleStyleSheet()
     elements = []
 
+    # --- Стили ---
     title_style = ParagraphStyle(
         "TitleStyle",
         parent=styles["Heading1"],
@@ -200,18 +201,22 @@ def generate_test_report(
         spaceAfter=6,
     )
 
+    # --- Заголовок ---
     elements.append(Paragraph("LANEX TEST REPORT", title_style))
     elements.append(Paragraph(f"<b>Test taker:</b> {test_taker}", info_style))
     elements.append(Paragraph(f"<b>Level:</b> {level}", info_style))
     elements.append(Paragraph(f"<b>Date:</b> {date_str}", info_style))
     elements.append(Spacer(1, 12))
 
-    # Закрытые задания
+    # --- Закрытые задания ---
     elements.append(Paragraph("<b>Closed Tasks</b>", styles["Heading2"]))
     for task, questions in closed_answers.items():
         data = [["Question", "Answer", "Status"]]
         for q_num, q_data in questions.items():
-            data.append([q_num, q_data["answer"], q_data["status"]])
+            answer = q_data.get("answer", "—")
+            status = q_data.get("status", "unchecked")
+            data.append([q_num, answer, status.capitalize()])
+
         t = Table(data, colWidths=[80, 250, 100])
         t.setStyle(TableStyle([
             ("BACKGROUND", (0, 0), (-1, 0), colors.lightgrey),
@@ -221,11 +226,13 @@ def generate_test_report(
         ]))
         elements.append(Paragraph(f"<b>{task}</b>", info_style))
         elements.append(t)
+
         if task in score:
             elements.append(Paragraph(f"Score: {score[task]}", info_style))
+
         elements.append(Spacer(1, 12))
 
-    # Открытые задания
+    # --- Открытые задания ---
     if open_answers:
         elements.append(Paragraph("<b>Open Tasks</b>", styles["Heading2"]))
         for task, answers in open_answers.items():
@@ -233,9 +240,43 @@ def generate_test_report(
             for q_num, user_answer in answers.items():
                 elements.append(Paragraph(f"Q{q_num}: {user_answer}", info_style))
                 elements.append(Spacer(1, 6))
-            elements.append(Spacer(1, 8))
 
-    # Итоговый результат
+            # Блок заметок преподавателя
+            elements.append(Paragraph("Teacher's notes:", info_style))
+            notes_box = Table(
+                [[" " * 100]],
+                colWidths=[440],
+                rowHeights=[60],
+                style=TableStyle([
+                    ("BOX", (0, 0), (-1, -1), 0.8, colors.grey),
+                    ("VALIGN", (0, 0), (-1, -1), "TOP"),
+                    ("LEFTPADDING", (0, 0), (-1, -1), 6),
+                    ("RIGHTPADDING", (0, 0), (-1, -1), 6),
+                    ("TOPPADDING", (0, 0), (-1, -1), 4),
+                ]),
+            )
+            elements.append(notes_box)
+            elements.append(Spacer(1, 20))
+
+    # --- Feedback section ---
+    elements.append(Spacer(1, 20))
+    elements.append(Paragraph("<b>Overall Feedback:</b>", info_style))
+    feedback_box = Table(
+        [[" " * 100]],
+        colWidths=[440],
+        rowHeights=[100],
+        style=TableStyle([
+            ("BOX", (0, 0), (-1, -1), 0.8, colors.grey),
+            ("VALIGN", (0, 0), (-1, -1), "TOP"),
+            ("LEFTPADDING", (0, 0), (-1, -1), 6),
+            ("RIGHTPADDING", (0, 0), (-1, -1), 6),
+            ("TOPPADDING", (0, 0), (-1, -1), 4),
+        ]),
+    )
+    elements.append(feedback_box)
+    elements.append(Spacer(1, 25))
+
+    # --- Итоговый результат ---
     total_score = score.get("total")
     if total_score is not None:
         total_table = Table(
@@ -248,9 +289,17 @@ def generate_test_report(
                 ("ALIGN", (0, 0), (-1, -1), "CENTER"),
                 ("FONTSIZE", (0, 0), (-1, -1), 14),
                 ("TEXTCOLOR", (0, 0), (-1, -1), colors.darkblue),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 8),
+                ("TOPPADDING", (0, 0), (-1, -1), 8),
             ]),
         )
         elements.append(total_table)
 
-    doc.build(elements, onFirstPage=_add_background_and_border, onLaterPages=_add_background_and_border)
+    # --- Сборка PDF ---
+    doc.build(
+        elements,
+        onFirstPage=_add_background_and_border,
+        onLaterPages=_add_background_and_border,
+    )
+
     return filepath

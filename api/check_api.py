@@ -158,7 +158,7 @@ async def check_test(submission: SubmissionModel, request: Request):
             except Exception as e:
                 logger.exception("❌ Ошибка при работе с базой данных")
                 raise HTTPException(status_code=500, detail=f"DB error: {e}")
-
+        print(check_result)
         return {
             "status": "ok",
             "username_used": safe_name,
