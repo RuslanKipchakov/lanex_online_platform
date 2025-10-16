@@ -44,12 +44,12 @@ class PreferredStudyModeEnum(str, Enum):
 
 
 class LevelEnum(str, Enum):
-    starter = "starter"
-    elementary = "elementary"
-    pre_intermediate = "pre-intermediate"
-    intermediate = "intermediate"
-    upper_intermediate = "upper-intermediate"
-    advanced = "advanced"
+    starter = "Starter"
+    elementary = "Elementary"
+    pre_intermediate = "Pre-Intermediate"
+    intermediate = "Intermediate"
+    upper_intermediate = "Upper-Intermediate"
+    advanced = "Advanced"
 
 
 class ReferenceSourceEnum(str, Enum):
