@@ -132,7 +132,13 @@ async def check_test(submission: SubmissionModel, request: Request):
         dropbox_path = None
         if pdf_path and os.path.exists(pdf_path):
             try:
-                dropbox_path = upload_to_dropbox(pdf_path)
+                dropbox_path = upload_to_dropbox(
+                    local_path=pdf_path,
+                    telegram_id=telegram_id,
+                    username=safe_name,
+                    file_type="test-report",
+                    level=level.value,
+                )
                 logger.info(f"☁️ Файл загружен в Dropbox: {dropbox_path}")
             except Exception as e:
                 logger.exception("⚠️ Ошибка при загрузке в Dropbox")
@@ -158,7 +164,7 @@ async def check_test(submission: SubmissionModel, request: Request):
             except Exception as e:
                 logger.exception("❌ Ошибка при работе с базой данных")
                 raise HTTPException(status_code=500, detail=f"DB error: {e}")
-        print(check_result)
+
         return {
             "status": "ok",
             "username_used": safe_name,

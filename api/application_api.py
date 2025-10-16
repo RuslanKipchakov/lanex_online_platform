@@ -70,6 +70,7 @@ async def create_application_endpoint(payload: ApplicationSchema, session: Async
             local_path=pdf_path,
             telegram_id=payload.telegram_id,
             username=payload.applicant_name,
+            file_type="application",
         )
         logger.info(f"☁️ Файл успешно загружен в Dropbox: {dropbox_path}")
 
