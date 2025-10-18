@@ -35,7 +35,7 @@ async def handle_update_application(callback: types.CallbackQuery):
     if not apps:
         await callback.message.edit_text("У вас пока нет заявок.")
         await callback.answer()
-        return  # 👈 добавляем явный return, чтобы IDE не ругалась
+        return
 
     app_buttons = [
         {"id": app.id, "name": app.applicant_name, "date": app.created_at.strftime("%Y-%m-%d")}
@@ -51,8 +51,7 @@ async def handle_update_application(callback: types.CallbackQuery):
 
 @router.callback_query(F.data == "check_level")
 async def show_levels(callback: types.CallbackQuery):
-    # Get init data from the callback to pass to WebApp
-    init_data = callback.message.web_app_data if hasattr(callback.message, 'web_app_data') else None
+    init_data = getattr(callback.message, 'web_app_data', None)
 
     await callback.message.edit_text(
         "Выберите уровень теста:",
@@ -73,15 +72,22 @@ async def handle_back(callback: types.CallbackQuery):
 @router.callback_query(F.data.startswith("edit_app_"))
 async def handle_edit_application(callback: types.CallbackQuery):
     app_id = int(callback.data.replace("edit_app_", ""))
-    init_data = callback.message.web_app_data if hasattr(callback.message, "web_app_data") else None
+    init_data = getattr(callback.message, "web_app_data", None)
 
     from telegram.keyboards import versioned_url
-    edit_url = versioned_url(f"/html_pages/application_page/application_page.html?edit_id={app_id}", init_data)
+    edit_url = versioned_url(
+        f"/html_pages/application_page/application_page.html?edit_id={app_id}",
+        init_data
+    )
 
-    # вместо промежуточного меню — сразу открываем WebApp
-    await callback.message.answer_web_app(
-        text=f"Открывается заявка #{app_id} для редактирования…",
-        web_app=types.WebAppInfo(url=edit_url)
+    # ✅ Правильный способ — отправляем кнопку, которая открывает WebApp
+    await callback.message.answer(
+        text=f"Откройте заявку #{app_id} для редактирования:",
+        reply_markup=types.InlineKeyboardMarkup(inline_keyboard=[[
+            types.InlineKeyboardButton(
+                text="📝 Редактировать заявку",
+                web_app=types.WebAppInfo(url=edit_url)
+            )
+        ]])
     )
     await callback.answer()
-
