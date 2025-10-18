@@ -30,9 +30,9 @@ document.addEventListener("DOMContentLoaded", () => {
   const okBtn = document.getElementById("okBtn");
   const scheduleGrid = document.querySelector(".schedule-grid");
 
-  // ==================== Получаем ID заявки (если редактирование) ====================
+  // ==================== Получаем параметры URL ====================
   const urlParams = new URLSearchParams(window.location.search);
-  const applicationId = urlParams.get("edit_id") || tg?.initDataUnsafe?.start_param || null;
+  const editId = urlParams.get("edit_id"); // <-- определяем режим
 
   // ==================== Генерация сетки расписания ====================
   if (scheduleGrid) {
@@ -100,8 +100,8 @@ document.addEventListener("DOMContentLoaded", () => {
   form.addEventListener("change", validateForm);
 
   // ==================== Загрузка существующей заявки ====================
-  if (applicationId) {
-    loadExistingApplication(applicationId);
+  if (editId) {
+    loadExistingApplication(editId);
   }
 
   async function loadExistingApplication(id) {
@@ -110,7 +110,7 @@ document.addEventListener("DOMContentLoaded", () => {
       if (!res.ok) throw new Error("Ошибка при получении заявки");
       const data = await res.json();
 
-      // === Заполняем поля ===
+      // === Автозаполнение полей ===
       document.getElementById("applicant_name").value = data.applicant_name || "";
       document.getElementById("phone_number").value = data.phone_number || "";
       document.getElementById("applicant_age").value = data.applicant_age || "";
@@ -203,31 +203,41 @@ document.addEventListener("DOMContentLoaded", () => {
       telegram_id: Number(fd.get("telegram_id")) || null,
     };
 
-    try {
-      const method = applicationId ? "PUT" : "POST";
-      const url = applicationId ? `/api/applications/${applicationId}` : "/api/applications";
+    await submitForm(payload);
+  });
 
-      const res = await fetch(url, {
+  // ==================== Отправка данных (POST/PUT) ====================
+  async function submitForm(payload) {
+    const url = editId
+      ? `/api/applications/${editId}`   // режим редактирования
+      : `/api/applications`;            // режим новой заявки
+
+    const method = editId ? "PUT" : "POST";
+
+    try {
+      const response = await fetch(url, {
         method,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
 
-      const resJson = await res.json().catch(() => null);
+      const result = await response.json().catch(() => null);
 
-      if (res.ok) {
+      if (response.ok) {
         if (modal) modal.style.display = "flex";
         form.reset();
         submitBtn.disabled = true;
       } else {
-        console.error("Server returned error:", res.status, resJson);
-        alert("❌ Ошибка: " + (resJson?.detail || res.statusText || "Попробуйте позже"));
+        console.error("Server returned error:", response.status, result);
+        alert("❌ Ошибка: " + (result?.detail || response.statusText || "Попробуйте позже"));
       }
+
+      console.log(result);
     } catch (err) {
       console.error("Fetch error:", err);
       alert("⚠️ Не удалось связаться с сервером");
     }
-  });
+  }
 
   // ==================== Модальное окно ====================
   if (okBtn) okBtn.addEventListener("click", () => {

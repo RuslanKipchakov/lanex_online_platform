@@ -123,6 +123,7 @@ async def update_application_by_id(
     need_ielts: bool | None,
     studied_at_lanex: bool,
     previous_experience: list[str] | None,
+    pdf_path: str | None = None,
 ):
     validated = validate_enum_fields({
         "level": level,
@@ -151,6 +152,7 @@ async def update_application_by_id(
             "need_ielts": need_ielts,
             "studied_at_lanex": studied_at_lanex,
             "previous_experience": validated.get("previous_experience"),
+            "pdf_path": pdf_path,
         }
 
         for field, new_value in fields_to_update.items():

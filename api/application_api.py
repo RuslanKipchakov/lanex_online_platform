@@ -231,6 +231,7 @@ async def update_application_endpoint(
             need_ielts=payload.need_ielts,
             studied_at_lanex=payload.studied_at_lanex,
             previous_experience=payload.previous_experience,
+            pdf_path=dropbox_path,
         )
 
         # 5️⃣ Отправляем админу обновлённый PDF

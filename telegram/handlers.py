@@ -72,21 +72,16 @@ async def handle_back(callback: types.CallbackQuery):
 
 @router.callback_query(F.data.startswith("edit_app_"))
 async def handle_edit_application(callback: types.CallbackQuery):
-    """
-    Обрабатывает нажатие на конкретную заявку из списка.
-    Открывает форму редактирования с уже заполненными данными.
-    """
     app_id = int(callback.data.replace("edit_app_", ""))
     init_data = callback.message.web_app_data if hasattr(callback.message, "web_app_data") else None
 
     from telegram.keyboards import versioned_url
     edit_url = versioned_url(f"/html_pages/application_page/application_page.html?edit_id={app_id}", init_data)
 
-    await callback.message.edit_text(
-        f"✏️ Открываем форму для редактирования заявки #{app_id}...",
-        reply_markup=types.InlineKeyboardMarkup(inline_keyboard=[
-            [types.InlineKeyboardButton(text="Открыть форму", web_app=types.WebAppInfo(url=edit_url))],
-            [types.InlineKeyboardButton(text="⬅️ Назад", callback_data="update_application")]
-        ])
+    # вместо промежуточного меню — сразу открываем WebApp
+    await callback.message.answer_web_app(
+        text=f"Открывается заявка #{app_id} для редактирования…",
+        web_app=types.WebAppInfo(url=edit_url)
     )
     await callback.answer()
+

@@ -53,6 +53,9 @@ def upload_to_dropbox(
     if file_type == "application":
         subfolder = "applications"
         filename = f"NEW_APPLICATION_{safe_username}_{date_str}.pdf"
+    elif file_type == "UPDATED_APPLICATION":
+        subfolder = "applications"
+        filename = f"UPDATED_APPLICATION_{safe_username}_{date_str}.pdf"
     elif file_type == "test-report":
         subfolder = "test-reports"
         filename = f"TEST_REPORT_{safe_username}_{date_str}_{level or 'Unknown'}.pdf"
