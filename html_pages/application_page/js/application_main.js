@@ -30,6 +30,10 @@ document.addEventListener("DOMContentLoaded", () => {
   const okBtn = document.getElementById("okBtn");
   const scheduleGrid = document.querySelector(".schedule-grid");
 
+  // ==================== Получаем ID заявки (если редактирование) ====================
+  const urlParams = new URLSearchParams(window.location.search);
+  const applicationId = urlParams.get("edit_id") || tg?.initDataUnsafe?.start_param || null;
+
   // ==================== Генерация сетки расписания ====================
   if (scheduleGrid) {
     const days = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб"];
@@ -95,6 +99,73 @@ document.addEventListener("DOMContentLoaded", () => {
   form.addEventListener("input", validateForm);
   form.addEventListener("change", validateForm);
 
+  // ==================== Загрузка существующей заявки ====================
+  if (applicationId) {
+    loadExistingApplication(applicationId);
+  }
+
+  async function loadExistingApplication(id) {
+    try {
+      const res = await fetch(`/api/applications/${id}`);
+      if (!res.ok) throw new Error("Ошибка при получении заявки");
+      const data = await res.json();
+
+      // === Заполняем поля ===
+      document.getElementById("applicant_name").value = data.applicant_name || "";
+      document.getElementById("phone_number").value = data.phone_number || "";
+      document.getElementById("applicant_age").value = data.applicant_age || "";
+
+      data.preferred_class_format?.forEach(val => {
+        const el = form.querySelector(`input[name="preferred_class_format"][value="${val}"]`);
+        if (el) el.checked = true;
+      });
+
+      data.preferred_study_mode?.forEach(val => {
+        const el = form.querySelector(`input[name="preferred_study_mode"][value="${val}"]`);
+        if (el) el.checked = true;
+      });
+
+      if (data.level) {
+        const levelEl = form.querySelector(`input[name="level"][value="${data.level}"]`);
+        if (levelEl) levelEl.checked = true;
+      }
+
+      if (data.reference_source) {
+        const refEl = form.querySelector(`select[name="reference_source"]`);
+        if (refEl) refEl.value = data.reference_source;
+      }
+
+      data.previous_experience?.forEach(val => {
+        const el = form.querySelector(`input[name="previous_experience"][value="${val}"]`);
+        if (el) el.checked = true;
+      });
+
+      const ieltsEl = form.querySelector(`input[name="need_ielts"][value="${data.need_ielts}"]`);
+      if (ieltsEl) ieltsEl.checked = true;
+
+      const lanexEl = form.querySelector(`input[name="studied_at_lanex"][value="${data.studied_at_lanex}"]`);
+      if (lanexEl) lanexEl.checked = true;
+
+      if (Array.isArray(data.possible_scheduling)) {
+        data.possible_scheduling.forEach(slot => {
+          const day = slot.day;
+          slot.times?.forEach(time => {
+            const input = form.querySelector(`input[name="schedule"][data-day="${day}"][value="${time}"]`);
+            if (input) input.checked = true;
+          });
+        });
+      }
+
+      document.getElementById("telegram_id").value = data.telegram_id || "";
+      submitBtn.textContent = "💾 Обновить заявку";
+      validateForm();
+
+    } catch (err) {
+      console.error("Ошибка при загрузке заявки:", err);
+      alert("Не удалось загрузить данные заявки. Попробуйте позже.");
+    }
+  }
+
   // ==================== Кнопка Назад ====================
   cancelBtn.addEventListener("click", () => {
     if (tg && typeof tg.close === "function") tg.close();
@@ -107,13 +178,11 @@ document.addEventListener("DOMContentLoaded", () => {
     if (submitBtn.disabled) return;
 
     const fd = new FormData(form);
-
-    // собираем и группируем расписание по дням
     const checkedSlots = Array.from(form.querySelectorAll('input[name="schedule"]:checked'));
     const grouped = {};
     checkedSlots.forEach(el => {
-      const day = el.dataset.day;   // "Пн", "Вт" ...
-      const time = el.value;        // "08:00"
+      const day = el.dataset.day;
+      const time = el.value;
       if (!grouped[day]) grouped[day] = [];
       grouped[day].push(time);
     });
@@ -135,8 +204,11 @@ document.addEventListener("DOMContentLoaded", () => {
     };
 
     try {
-      const res = await fetch("/api/applications", {
-        method: "POST",
+      const method = applicationId ? "PUT" : "POST";
+      const url = applicationId ? `/api/applications/${applicationId}` : "/api/applications";
+
+      const res = await fetch(url, {
+        method,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });

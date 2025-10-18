@@ -1,10 +1,12 @@
-from fastapi import APIRouter, Depends, HTTPException
+import os
+from fastapi import APIRouter, Depends, HTTPException, Path
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import List, Optional, Dict, Any
+from datetime import datetime
 
 from database.base import get_db
-from database.crud.application import create_application
+from database.crud.application import create_application, read_application_by_user_id, read_application_by_id, update_application_by_id
 from database.crud.user_session import append_application_id
 from utilities.pdf_generation import generate_application_pdf
 from utilities.dropbox_utils import upload_to_dropbox
@@ -117,21 +119,130 @@ async def create_application_endpoint(payload: ApplicationSchema, session: Async
         logger.error(f"❌ Ошибка при создании заявки: {e}")
         raise HTTPException(status_code=500, detail=f"Ошибка при обработке заявки: {e}")
 
-# @router.post("/applications/update", status_code=200)
-# async def update_application_endpoint(
-#     data: ApplicationSchema,
-#     telegram_id: int,
-#     session: AsyncSession = Depends(get_db)
-# ):
-#     from utilities.creating_paths import create_application_path
-#
-#     # создаём новый путь
-#     pdf_path = create_application_path(data.name, telegram_id).replace(".pdf", f"_updated.pdf")
-#
-#     # сохраняем обновлённую заявку в БД
-#     updated_app = await update_application_by_user_id(session, telegram_id, data, pdf_path)
-#
-#     # (TODO) генерим PDF, грузим в Dropbox, отправляем админу в Telegram
-#
-#     return {"status": "ok", "application_id": updated_app.id}
+
+# === 1. Получить все заявки пользователя ===
+@router.get("/applications/user/{telegram_id}")
+async def get_applications_by_user(
+    telegram_id: int = Path(..., description="Telegram ID пользователя"),
+    session: AsyncSession = Depends(get_db)
+):
+    apps = await read_application_by_user_id(session, telegram_id)
+    result = [
+        {
+            "id": app.id,
+            "name": app.applicant_name,
+            "date": app.created_at.strftime("%Y-%m-%d") if hasattr(app, "created_at") else "—",
+        }
+        for app in apps
+    ]
+    return result
+
+
+# === 2. Получить данные конкретной заявки ===
+@router.get("/applications/{id}")
+async def get_application_by_id(id: int, session: AsyncSession = Depends(get_db)):
+    app = await read_application_by_id(session, id)
+    if not app:
+        raise HTTPException(status_code=404, detail="Application not found")
+    return {
+        "id": app.id,
+        "applicant_name": app.applicant_name,
+        "phone_number": app.phone_number,
+        "applicant_age": app.applicant_age,
+        "preferred_class_format": app.preferred_class_format,
+        "preferred_study_mode": app.preferred_study_mode,
+        "level": app.level.value if app.level else None,
+        "possible_scheduling": app.possible_scheduling,
+        "reference_source": app.reference_source.value if app.reference_source else None,
+        "need_ielts": app.need_ielts,
+        "studied_at_lanex": app.studied_at_lanex,
+        "previous_experience": [v.value for v in app.previous_experience] if app.previous_experience else None,
+        "telegram_id": app.user_id,
+    }
+
+
+# === 3. Обновить заявку ===
+@router.put("/applications/{id}")
+async def update_application_endpoint(
+    id: int,
+    payload: ApplicationSchema,
+    session: AsyncSession = Depends(get_db)
+):
+    """
+    Обновляет заявку:
+    - проверяет, есть ли изменения;
+    - генерирует новый PDF с пометкой UPDATED_APPLICATION;
+    - загружает файл в Dropbox;
+    - обновляет запись в базе;
+    - отправляет PDF админу.
+    """
+    try:
+        # 1️⃣ Проверим, существует ли заявка
+        existing_app = await read_application_by_id(session, id)
+        if not existing_app:
+            raise HTTPException(status_code=404, detail="Application not found")
+
+        # 2️⃣ Генерация PDF
+        local_dir = "generated_applications"
+        timestamp = datetime.now().strftime("%d-%m-%Y_%H%M%S")
+        pdf_path = generate_application_pdf(
+            applicant_name=payload.applicant_name,
+            phone_number=payload.phone_number,
+            applicant_age=payload.applicant_age,
+            preferred_class_format=payload.preferred_class_format,
+            preferred_study_mode=payload.preferred_study_mode,
+            level=payload.level,
+            possible_scheduling=payload.possible_scheduling,
+            reference_source=payload.reference_source,
+            need_ielts=payload.need_ielts,
+            studied_at_lanex=payload.studied_at_lanex,
+            previous_experience=payload.previous_experience,
+            telegram_id=payload.telegram_id,
+            username=payload.applicant_name,
+            output_dir=local_dir,
+        )
+
+        # Переименуем файл
+        new_name = pdf_path.replace(".pdf", f"_UPDATED_{timestamp}.pdf")
+        os.rename(pdf_path, new_name)
+        pdf_path = new_name
+
+        # 3️⃣ Загрузка PDF в Dropbox
+        dropbox_path = upload_to_dropbox(
+            local_path=pdf_path,
+            telegram_id=payload.telegram_id,
+            username=payload.applicant_name,
+            file_type="UPDATED_APPLICATION",
+        )
+
+        # 4️⃣ Обновляем запись в БД
+        updated_app = await update_application_by_id(
+            session=session,
+            id=id,
+            user_id=payload.telegram_id,
+            applicant_name=payload.applicant_name,
+            phone_number=payload.phone_number,
+            applicant_age=payload.applicant_age,
+            preferred_class_format=payload.preferred_class_format,
+            preferred_study_mode=payload.preferred_study_mode,
+            level=payload.level,
+            possible_scheduling=payload.possible_scheduling,
+            reference_source=payload.reference_source,
+            need_ielts=payload.need_ielts,
+            studied_at_lanex=payload.studied_at_lanex,
+            previous_experience=payload.previous_experience,
+        )
+
+        # 5️⃣ Отправляем админу обновлённый PDF
+        await send_pdf_to_admin(
+            file_path=pdf_path,
+            caption=f"🔄 Обновлена заявка от {payload.applicant_name}"
+        )
+
+        return {"message": "Application updated successfully", "dropbox_path": dropbox_path}
+
+    except Exception as e:
+        logger.error(f"❌ Ошибка при обновлении заявки: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 
