@@ -1,7 +1,7 @@
 // ==================== Telegram WebApp Integration ====================
 function initializeTelegramWebApp() {
   const tg = window.Telegram?.WebApp;
-  if (!tg) return; // Telegram SDK не найден — пропускаем
+  if (!tg) return;
 
   const user = tg.initDataUnsafe?.user || tg.initData?.user;
   if (user?.id) {
@@ -9,7 +9,6 @@ function initializeTelegramWebApp() {
     if (idField) idField.value = user.id;
   }
 
-  // Разворачиваем окно
   if (typeof tg.expand === "function") tg.expand();
 }
 
@@ -21,8 +20,6 @@ if (document.readyState === "loading") {
 
 document.addEventListener("DOMContentLoaded", () => {
   const tg = window.Telegram?.WebApp;
-  if (tg && typeof tg.expand === "function") tg.expand();
-
   const form = document.getElementById("applicationForm");
   const submitBtn = document.getElementById("submitBtn");
   const cancelBtn = document.getElementById("cancelBtn");
@@ -30,9 +27,8 @@ document.addEventListener("DOMContentLoaded", () => {
   const okBtn = document.getElementById("okBtn");
   const scheduleGrid = document.querySelector(".schedule-grid");
 
-  // ==================== Получаем параметры URL ====================
   const urlParams = new URLSearchParams(window.location.search);
-  const editId = urlParams.get("edit_id"); // <-- определяем режим
+  const editId = urlParams.get("edit_id"); // если есть — редактирование
 
   // ==================== Генерация сетки расписания ====================
   if (scheduleGrid) {
@@ -49,7 +45,7 @@ document.addEventListener("DOMContentLoaded", () => {
       scheduleGrid.appendChild(dayDiv);
     });
 
-    // Сетка по времени
+    // Ячейки по часам
     hours.forEach(hour => {
       const timeLabel = `${hour.toString().padStart(2, "0")}:00`;
       days.forEach(day => {
@@ -79,15 +75,13 @@ document.addEventListener("DOMContentLoaded", () => {
     let valid = true;
 
     const name = document.getElementById("applicant_name")?.value.trim() || "";
-    if (name.length < 2) valid = false;
-
     const phone = document.getElementById("phone_number")?.value.trim() || "";
-    if (!validatePhone(phone)) valid = false;
-
     const ageVal = document.getElementById("applicant_age")?.value;
     const age = ageVal ? Number(ageVal) : null;
-    if (!age || age < 6 || age > 99) valid = false;
 
+    if (name.length < 2) valid = false;
+    if (!validatePhone(phone)) valid = false;
+    if (!age || age < 6 || age > 99) valid = false;
     if (form.querySelectorAll("input[name='preferred_class_format']:checked").length === 0) valid = false;
     if (form.querySelectorAll("input[name='preferred_study_mode']:checked").length === 0) valid = false;
     if (!form.querySelector("input[name='level']:checked")) valid = false;
@@ -99,7 +93,7 @@ document.addEventListener("DOMContentLoaded", () => {
   form.addEventListener("input", validateForm);
   form.addEventListener("change", validateForm);
 
-  // ==================== Загрузка существующей заявки ====================
+  // ==================== Если editId есть → загружаем данные ====================
   if (editId) {
     loadExistingApplication(editId);
   }
@@ -110,7 +104,7 @@ document.addEventListener("DOMContentLoaded", () => {
       if (!res.ok) throw new Error("Ошибка при получении заявки");
       const data = await res.json();
 
-      // === Автозаполнение полей ===
+      // === Автозаполнение ===
       document.getElementById("applicant_name").value = data.applicant_name || "";
       document.getElementById("phone_number").value = data.phone_number || "";
       document.getElementById("applicant_age").value = data.applicant_age || "";
@@ -126,13 +120,13 @@ document.addEventListener("DOMContentLoaded", () => {
       });
 
       if (data.level) {
-        const levelEl = form.querySelector(`input[name="level"][value="${data.level}"]`);
-        if (levelEl) levelEl.checked = true;
+        const el = form.querySelector(`input[name="level"][value="${data.level}"]`);
+        if (el) el.checked = true;
       }
 
       if (data.reference_source) {
-        const refEl = form.querySelector(`select[name="reference_source"]`);
-        if (refEl) refEl.value = data.reference_source;
+        const el = form.querySelector(`input[name="reference_source"][value="${data.reference_source}"]`);
+        if (el) el.checked = true;
       }
 
       data.previous_experience?.forEach(val => {
@@ -140,11 +134,15 @@ document.addEventListener("DOMContentLoaded", () => {
         if (el) el.checked = true;
       });
 
-      const ieltsEl = form.querySelector(`input[name="need_ielts"][value="${data.need_ielts}"]`);
-      if (ieltsEl) ieltsEl.checked = true;
+      if (typeof data.need_ielts === "boolean") {
+        const el = form.querySelector(`input[name="need_ielts"][value="${data.need_ielts}"]`);
+        if (el) el.checked = true;
+      }
 
-      const lanexEl = form.querySelector(`input[name="studied_at_lanex"][value="${data.studied_at_lanex}"]`);
-      if (lanexEl) lanexEl.checked = true;
+      if (typeof data.studied_at_lanex === "boolean") {
+        const el = form.querySelector(`input[name="studied_at_lanex"][value="${data.studied_at_lanex}"]`);
+        if (el) el.checked = true;
+      }
 
       if (Array.isArray(data.possible_scheduling)) {
         data.possible_scheduling.forEach(slot => {
@@ -157,9 +155,9 @@ document.addEventListener("DOMContentLoaded", () => {
       }
 
       document.getElementById("telegram_id").value = data.telegram_id || "";
+
       submitBtn.textContent = "💾 Обновить заявку";
       validateForm();
-
     } catch (err) {
       console.error("Ошибка при загрузке заявки:", err);
       alert("Не удалось загрузить данные заявки. Попробуйте позже.");
@@ -180,12 +178,14 @@ document.addEventListener("DOMContentLoaded", () => {
     const fd = new FormData(form);
     const checkedSlots = Array.from(form.querySelectorAll('input[name="schedule"]:checked'));
     const grouped = {};
+
     checkedSlots.forEach(el => {
       const day = el.dataset.day;
       const time = el.value;
       if (!grouped[day]) grouped[day] = [];
       grouped[day].push(time);
     });
+
     const possible_scheduling = Object.entries(grouped).map(([day, times]) => ({ day, times }));
 
     const payload = {
@@ -206,11 +206,11 @@ document.addEventListener("DOMContentLoaded", () => {
     await submitForm(payload);
   });
 
-  // ==================== Отправка данных (POST/PUT) ====================
+  // ==================== Отправка данных на сервер ====================
   async function submitForm(payload) {
     const url = editId
-      ? `/api/applications/${editId}`   // режим редактирования
-      : `/api/applications`;            // режим новой заявки
+      ? `/api/applications/${editId}`
+      : `/api/applications`;
 
     const method = editId ? "PUT" : "POST";
 
@@ -232,7 +232,7 @@ document.addEventListener("DOMContentLoaded", () => {
         alert("❌ Ошибка: " + (result?.detail || response.statusText || "Попробуйте позже"));
       }
 
-      console.log(result);
+      console.log("Server result:", result);
     } catch (err) {
       console.error("Fetch error:", err);
       alert("⚠️ Не удалось связаться с сервером");
@@ -240,12 +240,13 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   // ==================== Модальное окно ====================
-  if (okBtn) okBtn.addEventListener("click", () => {
-    if (modal) modal.style.display = "none";
-    if (tg && typeof tg.close === "function") tg.close();
-    else window.close();
-  });
+  if (okBtn) {
+    okBtn.addEventListener("click", () => {
+      if (modal) modal.style.display = "none";
+      if (tg && typeof tg.close === "function") tg.close();
+      else window.close();
+    });
+  }
 
-  // ==================== Инициализация ====================
   validateForm();
 });

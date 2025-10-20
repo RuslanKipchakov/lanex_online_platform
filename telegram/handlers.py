@@ -33,7 +33,12 @@ async def handle_update_application(callback: types.CallbackQuery):
         apps = await read_application_by_user_id(session, telegram_id)
 
     if not apps:
-        await callback.message.edit_text("У вас пока нет заявок.")
+        await callback.message.edit_text(
+            "У вас пока нет заявок.",
+            reply_markup=types.InlineKeyboardMarkup(inline_keyboard=[
+                [types.InlineKeyboardButton(text="⬅️ Назад", callback_data="go_back")]
+            ])
+        )
         await callback.answer()
         return
 
@@ -65,29 +70,5 @@ async def handle_back(callback: types.CallbackQuery):
     await callback.message.edit_text(
         "Главное меню:",
         reply_markup=get_main_menu()
-    )
-    await callback.answer()
-
-
-@router.callback_query(F.data.startswith("edit_app_"))
-async def handle_edit_application(callback: types.CallbackQuery):
-    app_id = int(callback.data.replace("edit_app_", ""))
-    init_data = getattr(callback.message, "web_app_data", None)
-
-    from telegram.keyboards import versioned_url
-    edit_url = versioned_url(
-        f"/html_pages/application_page/application_page.html?edit_id={app_id}",
-        init_data
-    )
-
-    # ✅ Правильный способ — отправляем кнопку, которая открывает WebApp
-    await callback.message.answer(
-        text=f"Откройте заявку #{app_id} для редактирования:",
-        reply_markup=types.InlineKeyboardMarkup(inline_keyboard=[[
-            types.InlineKeyboardButton(
-                text="📝 Редактировать заявку",
-                web_app=types.WebAppInfo(url=edit_url)
-            )
-        ]])
     )
     await callback.answer()

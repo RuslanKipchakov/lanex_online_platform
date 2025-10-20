@@ -6,11 +6,14 @@ BASE_URL = "https://lanexonlineplatform-mynewenv.up.railway.app"
 
 
 def versioned_url(path: str, init_data: str = None) -> str:
-    """Добавляет параметр версии и Telegram initData если доступно"""
-    url = f"{BASE_URL}{path}?v={int(time.time())}"
+    """
+    Формирует URL так, чтобы правильно добавлять параметры,
+    независимо от того, есть ли в path уже query string.
+    """
+    sep = '&' if '?' in path else '?'
+    url = f"{BASE_URL}{path}{sep}v={int(time.time())}"
 
     if init_data:
-        # Add Telegram WebApp init data
         url += f"&tgWebAppData={urllib.parse.quote(init_data)}"
 
     return url
@@ -65,9 +68,15 @@ def get_levels_menu(init_data: str = None):
 def applications_menu(applications: list[dict], init_data: str = None) -> InlineKeyboardMarkup:
     buttons = []
     for app in applications:
-        buttons.append([InlineKeyboardButton(
-            text=f"{app['name']} ({app['date']})",
-            callback_data=f"edit_app_{app['id']}"
-        )])
+        url = versioned_url(
+            f"/html_pages/application_page/application_page.html?edit_id={app['id']}",
+            init_data
+        )
+        buttons.append([
+            InlineKeyboardButton(
+                text=f"{app['name']} ({app['date']})",
+                web_app=WebAppInfo(url=url)
+            )
+        ])
     buttons.append([InlineKeyboardButton(text="⬅️ Назад", callback_data="go_back")])
     return InlineKeyboardMarkup(inline_keyboard=buttons)

@@ -202,9 +202,10 @@ async def update_application_endpoint(
             output_dir=local_dir,
         )
 
-        # Переименуем файл
-        new_name = pdf_path.replace(".pdf", f"_UPDATED_{timestamp}.pdf")
-        os.rename(pdf_path, new_name)
+        # Корректно формируем новое имя — явно задаём префикс UPDATED_APPLICATION
+        dir_name = os.path.dirname(pdf_path) or local_dir
+        new_name = os.path.join(dir_name, f"UPDATED_APPLICATION_{timestamp}.pdf")
+        os.replace(pdf_path, new_name)  # os.replace безопаснее: перезапишет при необходимости
         pdf_path = new_name
 
         # 3️⃣ Загрузка PDF в Dropbox
