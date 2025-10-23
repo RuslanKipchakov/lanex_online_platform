@@ -139,7 +139,7 @@ def generate_application_pdf(
 
     # === Расписание ===
     elements.append(Paragraph("Доступное расписание", subtitle_style))
-    schedule_data = [["<b>День</b>", "<b>Предпочтительные часы</b>"]]
+    schedule_data = [["День", "Предпочтительные часы"]]
     for slot in possible_scheduling:
         schedule_data.append([
             slot.get("day", "—"),
