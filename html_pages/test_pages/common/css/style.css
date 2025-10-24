@@ -346,9 +346,10 @@ button:active {
 }
 
 .logo {
-  max-width: 200px;
+  max-width: 100px; /* Twice smaller than the original 200px */
   height: auto;
-  display: inline-block;
+  display: block; /* Change to block for better centering */
+  margin: 0 auto; /* Center the logo */
 }
 
 /* Container background to match body */
