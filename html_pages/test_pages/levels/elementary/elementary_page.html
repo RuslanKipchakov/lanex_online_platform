@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Тест уровня Elementary</title>
 
-  <!-- 🔥 ADD THIS - Telegram WebApp SDK -->
+  <!-- Telegram WebApp SDK -->
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
 
   <!-- Основные стили -->
@@ -20,12 +20,15 @@
   <div class="container">
 
     <div class="logo-section">
-      <img src="../../common/images/logo_header.png" alt="Lanex Logo" class="logo">
+      <img src="../../common/images/logo_header.png" alt="Lanex Logo" class="logo" />
     </div>
 
     <header>
       <h1>Тест на подтверждение уровня Elementary</h1>
-      <p><strong>Дисклеймер:</strong> данный тест составлен преподавателями учебного центра <b>Lanex</b> исключительно для внутреннего использования.</p>
+      <p>
+        <strong>Дисклеймер:</strong> данный тест составлен преподавателями учебного центра
+        <b>Lanex</b> исключительно для внутреннего использования.
+      </p>
     </header>
 
     <div class="instructions">
@@ -40,7 +43,13 @@
 
     <div id="user-info">
       <label for="username">Введите ваше имя:</label>
-      <input type="text" id="username" name="username" placeholder="Ваше имя" required />
+      <input
+        type="text"
+        id="username"
+        name="username"
+        placeholder="Ваше имя"
+        required
+      />
     </div>
 
     <!-- Скрытые поля -->
@@ -78,8 +87,10 @@
         <h2>Task 4: Writing</h2>
       </div>
 
+      <!-- Кнопки управления -->
       <div class="buttons">
-        <button type="button" id="submit-test">Отправить ответы</button>
+        <button type="button" id="back-button" class="btn-primary">Назад</button>
+        <button type="button" id="submit-test" class="btn-primary">Отправить ответы</button>
       </div>
     </form>
 

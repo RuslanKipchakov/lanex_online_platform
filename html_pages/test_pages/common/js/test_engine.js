@@ -1,11 +1,12 @@
 // =======================
-// ✅ Telegram WebApp Integration (clean version)
+// ✅ Telegram WebApp Integration (с кнопкой "Назад")
 // =======================
 function initializeTelegramWebApp() {
   const tg = window.Telegram?.WebApp;
 
   if (!tg) {
     createFallbackTelegramField();
+    attachBackButtonHandler(null);
     return;
   }
 
@@ -17,7 +18,7 @@ function initializeTelegramWebApp() {
     setTelegramUserData(user.id);
 
     // Автоподстановка имени пользователя
-    const usernameInput = document.getElementById('username');
+    const usernameInput = document.getElementById("username");
     if (usernameInput && !usernameInput.value.trim()) {
       const userName = user.username || user.first_name || `user_${user.id}`;
       usernameInput.value = userName;
@@ -25,18 +26,21 @@ function initializeTelegramWebApp() {
   } else {
     createFallbackTelegramField();
   }
+
+  // 🟢 Добавляем обработчик кнопки "Назад"
+  attachBackButtonHandler(tg);
 }
 
 function setTelegramUserData(telegramId) {
-  let telegramIdField = document.getElementById('telegram-id');
+  let telegramIdField = document.getElementById("telegram-id");
 
   if (!telegramIdField) {
-    telegramIdField = document.createElement('input');
-    telegramIdField.type = 'hidden';
-    telegramIdField.id = 'telegram-id';
-    telegramIdField.name = 'telegram_id';
+    telegramIdField = document.createElement("input");
+    telegramIdField.type = "hidden";
+    telegramIdField.id = "telegram-id";
+    telegramIdField.name = "telegram_id";
 
-    const form = document.getElementById('testForm') || document.querySelector('form');
+    const form = document.getElementById("testForm") || document.querySelector("form");
     if (form) {
       form.appendChild(telegramIdField);
     } else {
@@ -50,6 +54,42 @@ function setTelegramUserData(telegramId) {
   }
 
   telegramIdField.value = telegramId;
+}
+
+function createFallbackTelegramField() {
+  let telegramIdField = document.getElementById("telegram-id");
+  if (!telegramIdField) {
+    telegramIdField = document.createElement("input");
+    telegramIdField.type = "hidden";
+    telegramIdField.id = "telegram-id";
+    telegramIdField.name = "telegram_id";
+    telegramIdField.value = "";
+    document.body.appendChild(telegramIdField);
+  }
+}
+
+// =======================
+// 🔙 Обработчик кнопки "Назад"
+// =======================
+function attachBackButtonHandler(tgInstance) {
+  const backBtn = document.getElementById("back-button");
+  if (!backBtn) return;
+
+  backBtn.addEventListener("click", (e) => {
+    e.preventDefault();
+
+    // Если работаем в Telegram WebApp
+    if (tgInstance && typeof tgInstance.close === "function") {
+      tgInstance.close();
+    } else {
+      // Для локальной отладки в браузере
+      if (window.history.length > 1) {
+        window.history.back();
+      } else {
+        window.location.href = "../../index.html";
+      }
+    }
+  });
 }
 
 function createFallbackTelegramField() {
