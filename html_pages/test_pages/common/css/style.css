@@ -3,7 +3,7 @@ body {
   font-family: Arial, sans-serif;
   font-size: 16px;
   line-height: 1.4;
-  background: #f9f9f9;
+  background: #fcfcf7;
   margin: 0;
   padding: 20px;
   color: #222;
@@ -336,4 +336,25 @@ button:active {
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(-10px); }
   to { opacity: 1; transform: translateY(0); }
+}
+
+/* Logo Section */
+.logo-section {
+  text-align: center;
+  margin-bottom: 20px;
+  padding: 10px 0;
+}
+
+.logo {
+  max-width: 200px;
+  height: auto;
+  display: inline-block;
+}
+
+/* Container background to match body */
+.container {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 20px;
+  background: #fcfcf7; /* Same as body background */
 }
