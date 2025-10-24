@@ -393,3 +393,63 @@ button.disabled-btn {
     font-size: 15px;
   }
 }
+
+/* === Инструкции === */
+.instructions {
+  background: #fff8e1;
+  border: 1px solid #ffd54f;
+  border-radius: 8px;
+  padding: 12px;
+  margin-bottom: 15px;
+  font-size: 0.9em;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.instructions ul {
+  margin: 8px 0;
+  padding-left: 20px;
+}
+
+.instructions li {
+  margin-bottom: 5px;
+}
+
+/* === Итоговый блок (улучшенный) === */
+.total-score {
+  margin-top: 30px;
+  padding: 20px;
+  border-radius: 10px;
+  background-color: #f9f9f9;
+  text-align: center;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+}
+
+.total-score .note {
+  font-size: 0.9rem;
+  color: #555;
+  margin-top: -10px;
+  margin-bottom: 15px;
+}
+
+.total-score .final-score {
+  font-size: 1.2rem;
+  font-weight: bold;
+  margin: 12px 0;
+  padding: 10px 14px;
+  border-radius: 8px;
+  display: inline-block;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* === Подсветка результата === */
+.level-confirmed {
+  background-color: #e6f9e6;   /* мягкий зелёный фон */
+  color: #1b751b;
+  border: 1px solid #53c153;
+}
+
+.level-not-confirmed {
+  background-color: #ffe6e6;   /* мягкий красный фон */
+  color: #a32626;
+  border: 1px solid #e67c7c;
+}
