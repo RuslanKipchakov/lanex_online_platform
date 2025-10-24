@@ -246,7 +246,17 @@ def generate_test_report(
         elements.append(Paragraph("Open Task", subtitle_style))
         for task, answers in open_answers.items():
             for q_num, user_answer in answers.items():
-                answer_table = Table([[Paragraph(f"Q{q_num}: {user_answer}", info_style)]], colWidths=[440])
+                # Заменяем переводы строк на <br/>, чтобы сохранялись абзацы
+                if isinstance(user_answer, str):
+                    formatted_answer = user_answer.replace("\n\n", "<br/><br/>").replace("\n", "<br/>")
+                else:
+                    formatted_answer = str(user_answer)
+
+                # Формируем параграф с форматированным ответом
+                answer_paragraph = Paragraph(f"<b>Q{q_num}:</b> {formatted_answer}", info_style)
+
+                # Оборачиваем в таблицу, как раньше
+                answer_table = Table([[answer_paragraph]], colWidths=[440])
                 answer_table.setStyle(TableStyle([
                     ("BOX", (0, 0), (-1, -1), 0.8, colors.grey),
                     ("BACKGROUND", (0, 0), (-1, -1), colors.whitesmoke),
