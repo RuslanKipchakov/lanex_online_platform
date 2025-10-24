@@ -310,13 +310,35 @@ function displayTotalResult(result, cfg) {
     container = document.createElement('div');
     container.id = cfg.resultContainerIds[0];
     container.className = 'total-score';
-    root.appendChild(container);
+
+    // Найдём кнопку "Назад", чтобы вставить результат перед ней
+    const backButton = document.getElementById('back-button');
+    if (backButton && backButton.parentNode === root) {
+      root.insertBefore(container, backButton);
+    } else {
+      root.appendChild(container);
+    }
+
   }
 
   const total = result.total || result['total'] || '';
-  let html = `<h2>Спасибо за прохождение теста!</h2>`;
+  const numericTotal = parseFloat(total); // пытаемся извлечь число (например, "75%")
+
+  // Определяем класс подсветки
+  let levelClass = '';
+  if (!isNaN(numericTotal)) {
+    levelClass = numericTotal >= 70 ? 'level-confirmed' : 'level-not-confirmed';
+  }
+
+  let html = `
+    <h2>Спасибо за прохождение теста!</h2>
+    <p class="note">
+      Уровень считается подтвержденным, если ваш итоговый результат составляет не меньше <b>70%</b>.
+    </p>
+  `;
+
   if (total) {
-    html += `<p><strong>Итог: </strong> ${total}</p>`;
+    html += `<p class="final-score ${levelClass}"><strong>Итог:</strong> ${total}</p>`;
   }
 
   for (const [taskId, taskRes] of Object.entries(result)) {
@@ -328,6 +350,7 @@ function displayTotalResult(result, cfg) {
 
   container.innerHTML = html;
 }
+
 
 function hideSubmitButton(cfg) {
   cfg.submitButtonIds.forEach(id => {
