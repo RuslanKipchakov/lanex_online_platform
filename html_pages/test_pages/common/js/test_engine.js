@@ -343,11 +343,12 @@ function displayTotalResult(result, cfg) {
 
   container.innerHTML = html;
 
-  // Сдвигаем блок результатов перед кнопками
+  // Размещаем блок результатов после кнопок
   const buttonsBlock = document.querySelector('.buttons');
-  if (buttonsBlock && container.nextSibling !== buttonsBlock) {
-    buttonsBlock.parentNode.insertBefore(container, buttonsBlock);
+  if (buttonsBlock) {
+    buttonsBlock.insertAdjacentElement('afterend', container);
   }
+
 
   // Опционально: делаем кнопку "Отправить" неактивной после показа результата
   const submitBtn = document.getElementById('submit-test');
