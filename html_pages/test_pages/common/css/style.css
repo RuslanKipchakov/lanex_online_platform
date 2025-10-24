@@ -28,7 +28,7 @@ body {
 }
 
 .logo {
-  width: 60px; /* Much smaller for mobile */
+  width: 120px; /* Much smaller for mobile */
   height: auto;
   display: block;
   margin: 0 auto;
@@ -415,7 +415,7 @@ button:active {
   }
 
   .logo {
-    width: 50px;
+    width: 80px;
   }
 
   h1 {
