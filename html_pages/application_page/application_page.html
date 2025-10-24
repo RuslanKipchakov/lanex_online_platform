@@ -7,112 +7,120 @@
   <link rel="stylesheet" href="css/style.css" />
 </head>
 <body>
-  <div class="form-container">
-    <h1>Заявка на обучение</h1>
+  <div class="container">
+    <!-- Логотип -->
+    <div class="logo-section">
+      <img src="images/logo_header.png" alt="Lanex Logo" class="logo" />
+    </div>
 
-    <form id="applicationForm">
-      <input type="hidden" id="telegram_id" name="telegram_id" value="" />
+    <!-- Контейнер формы -->
+    <div class="form-container">
+      <h1>Заявка на обучение</h1>
 
-      <!-- Имя -->
-      <label for="applicant_name">Имя *</label>
-      <input type="text" id="applicant_name" name="applicant_name" required minlength="2" maxlength="50" />
+      <form id="applicationForm">
+        <input type="hidden" id="telegram_id" name="telegram_id" value="" />
 
-      <!-- Телефон -->
-      <label for="phone_number">Номер телефона *</label>
-      <input type="tel" id="phone_number" name="phone_number"
-             placeholder="+998 90 123-45-67"
-             required pattern="^\+998\s?\d{2}\s?\d{3}-?\d{2}-?\d{2}$" />
+        <!-- Имя -->
+        <label for="applicant_name">Имя *</label>
+        <input type="text" id="applicant_name" name="applicant_name" required minlength="2" maxlength="50" />
 
-      <!-- Возраст -->
-      <label for="applicant_age">Возраст *</label>
-      <input type="number" id="applicant_age" name="applicant_age" required min="6" max="99" />
+        <!-- Телефон -->
+        <label for="phone_number">Номер телефона *</label>
+        <input type="tel" id="phone_number" name="phone_number"
+              placeholder="+998 90 123-45-67"
+              required pattern="^\\+998\\s?\\d{2}\\s?\\d{3}-?\\d{2}-?\\d{2}$" />
 
-      <!-- Формат обучения -->
-      <fieldset>
-        <legend>Формат обучения (можно несколько) *</legend>
-        <label><input type="checkbox" name="preferred_class_format" value="individual" /> Индивидуальный</label>
-        <label><input type="checkbox" name="preferred_class_format" value="pair" /> Парный</label>
-        <label><input type="checkbox" name="preferred_class_format" value="group" /> Групповой</label>
-      </fieldset>
+        <!-- Возраст -->
+        <label for="applicant_age">Возраст *</label>
+        <input type="number" id="applicant_age" name="applicant_age" required min="6" max="99" />
 
-      <!-- Тип урока -->
-      <fieldset>
-        <legend>Тип урока (можно несколько) *</legend>
-        <label><input type="checkbox" name="preferred_study_mode" value="online" /> Онлайн</label>
-        <label><input type="checkbox" name="preferred_study_mode" value="offline" /> Оффлайн</label>
-      </fieldset>
+        <!-- Формат обучения -->
+        <fieldset>
+          <legend>Формат обучения (можно несколько) *</legend>
+          <label><input type="checkbox" name="preferred_class_format" value="individual" /> Индивидуальный</label>
+          <label><input type="checkbox" name="preferred_class_format" value="pair" /> Парный</label>
+          <label><input type="checkbox" name="preferred_class_format" value="group" /> Групповой</label>
+        </fieldset>
 
-      <!-- Предполагаемый уровень -->
-      <fieldset>
-        <legend>Предполагаемый уровень *</legend>
-        <label><input type="radio" name="level" value="Starter" required /> Starter</label>
-        <label><input type="radio" name="level" value="Elementary" /> Elementary</label>
-        <label><input type="radio" name="level" value="Pre-Intermediate" /> Pre-Intermediate</label>
-        <label><input type="radio" name="level" value="Intermediate" /> Intermediate</label>
-        <label><input type="radio" name="level" value="Upper-Intermediate" /> Upper-Intermediate</label>
-      </fieldset>
+        <!-- Тип урока -->
+        <fieldset>
+          <legend>Тип урока (можно несколько) *</legend>
+          <label><input type="checkbox" name="preferred_study_mode" value="online" /> Онлайн</label>
+          <label><input type="checkbox" name="preferred_study_mode" value="offline" /> Оффлайн</label>
+        </fieldset>
 
-      <!-- Возможное расписание -->
-      <fieldset>
-        <legend>Возможное расписание *</legend>
-        <p>Отметьте подходящие часы:</p>
-        <div class="schedule-grid">
-          <!-- Здесь JS будет генерировать input[name="schedule"] -->
+        <!-- Предполагаемый уровень -->
+        <fieldset>
+          <legend>Предполагаемый уровень *</legend>
+          <label><input type="radio" name="level" value="Starter" required /> Starter</label>
+          <label><input type="radio" name="level" value="Elementary" /> Elementary</label>
+          <label><input type="radio" name="level" value="Pre-Intermediate" /> Pre-Intermediate</label>
+          <label><input type="radio" name="level" value="Intermediate" /> Intermediate</label>
+          <label><input type="radio" name="level" value="Upper-Intermediate" /> Upper-Intermediate</label>
+        </fieldset>
+
+        <!-- Возможное расписание -->
+        <fieldset>
+          <legend>Возможное расписание *</legend>
+          <p>Отметьте подходящие часы:</p>
+          <div class="schedule-grid">
+            <!-- Здесь JS будет генерировать input[name="schedule"] -->
+          </div>
+        </fieldset>
+
+        <!-- IELTS/TOEFL -->
+        <fieldset>
+          <legend>Планируете сдавать IELTS или TOEFL?</legend>
+          <label><input type="radio" name="need_ielts" value="true" /> Да</label>
+          <label><input type="radio" name="need_ielts" value="false" /> Нет</label>
+        </fieldset>
+
+        <!-- Изучали ли ранее -->
+        <fieldset>
+          <legend>Изучали ли ранее английский язык?</legend>
+          <label><input type="checkbox" name="previous_experience" value="never" /> Никогда</label>
+          <label><input type="checkbox" name="previous_experience" value="school" /> В школе</label>
+          <label><input type="checkbox" name="previous_experience" value="university" /> В вузе</label>
+          <label><input type="checkbox" name="previous_experience" value="courses" /> На курсах</label>
+          <label><input type="checkbox" name="previous_experience" value="self_study" /> Самостоятельно</label>
+        </fieldset>
+
+        <!-- Ранее занимались в Lanex -->
+        <fieldset>
+          <legend>Занимались ли ранее в Lanex?</legend>
+          <label><input type="radio" name="studied_at_lanex" value="true" /> Да</label>
+          <label><input type="radio" name="studied_at_lanex" value="false" /> Нет</label>
+        </fieldset>
+
+        <!-- Откуда узнали -->
+        <fieldset>
+          <legend>Откуда вы о нас узнали?</legend>
+          <label><input type="radio" name="reference_source" value="friends" /> Друзья</label>
+          <label><input type="radio" name="reference_source" value="internet" /> Интернет</label>
+          <label><input type="radio" name="reference_source" value="telegram" /> Telegram</label>
+          <label><input type="radio" name="reference_source" value="other" /> Другое</label>
+        </fieldset>
+
+        <!-- Кнопки -->
+        <div class="buttons">
+          <button type="button" id="cancelBtn">Назад</button>
+          <button type="submit" id="submitBtn" disabled>Оставить заявку</button>
         </div>
-      </fieldset>
+      </form>
+    </div>
 
-      <!-- IELTS/TOEFL -->
-      <fieldset>
-        <legend>Планируете сдавать IELTS или TOEFL?</legend>
-        <label><input type="radio" name="need_ielts" value="true" /> Да</label>
-        <label><input type="radio" name="need_ielts" value="false" /> Нет</label>
-      </fieldset>
-
-      <!-- Изучали ли ранее -->
-      <fieldset>
-        <legend>Изучали ли ранее английский язык?</legend>
-        <label><input type="checkbox" name="previous_experience" value="never" /> Никогда</label>
-        <label><input type="checkbox" name="previous_experience" value="school" /> В школе</label>
-        <label><input type="checkbox" name="previous_experience" value="university" /> В вузе</label>
-        <label><input type="checkbox" name="previous_experience" value="courses" /> На курсах</label>
-        <label><input type="checkbox" name="previous_experience" value="self_study" /> Самостоятельно</label>
-      </fieldset>
-
-      <!-- Ранее занимались в Lanex -->
-      <fieldset>
-        <legend>Занимались ли ранее в Lanex?</legend>
-        <label><input type="radio" name="studied_at_lanex" value="true" /> Да</label>
-        <label><input type="radio" name="studied_at_lanex" value="false" /> Нет</label>
-      </fieldset>
-
-      <!-- Откуда узнали -->
-      <fieldset>
-        <legend>Откуда вы о нас узнали?</legend>
-        <label><input type="radio" name="reference_source" value="friends" /> Друзья</label>
-        <label><input type="radio" name="reference_source" value="internet" /> Интернет</label>
-        <label><input type="radio" name="reference_source" value="telegram" /> Telegram</label>
-        <label><input type="radio" name="reference_source" value="other" /> Другое</label>
-      </fieldset>
-
-      <!-- Кнопки -->
-      <div class="form-buttons">
-        <button type="button" id="cancelBtn">Назад</button>
-        <button type="submit" id="submitBtn" disabled>Оставить заявку</button>
+    <!-- Модальное окно -->
+    <div id="successModal" class="modal">
+      <div class="modal-content">
+        <h2>Заявка отправлена ✅</h2>
+        <p>Администратор скоро свяжется с вами.</p>
+        <button id="okBtn">ОК</button>
       </div>
-    </form>
-  </div>
-
-  <!-- Подключаем только один JS -->
-  <script src="https://telegram.org/js/telegram-web-app.js"></script>
-  <script type="module" src="js/application_main.js"></script>
-
-  <!-- Модальное окно -->
-  <div id="successModal" class="modal">
-    <div class="modal-content">
-      <h2>Заявка отправлена ✅</h2>
-      <p>Администратор скоро свяжется с вами.</p>
-      <button id="okBtn">ОК</button>
     </div>
   </div>
+
+  <!-- JS -->
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <script type="module" src="js/application_main.js"></script>
 </body>
 </html>
