@@ -341,7 +341,7 @@ function displayTotalResult(result, cfg) {
 
   container.innerHTML = html;
 
-  // 🟢 Теперь вставляем результат ПЕРЕД кнопкой "Назад", если она есть
+  // 🟢 Размещаем результат ПЕРЕД кнопкой "Назад", если она есть
   const backBtn = document.getElementById('back-button');
   if (backBtn && backBtn.parentNode) {
     backBtn.parentNode.insertBefore(container, backBtn);
@@ -353,7 +353,7 @@ function displayTotalResult(result, cfg) {
     }
   }
 
-  // Делаем кнопку "Отправить" неактивной
+  // 🧩 Делаем кнопку "Отправить" неактивной
   const submitBtn = document.getElementById('submit-test');
   if (submitBtn) {
     submitBtn.disabled = true;
@@ -361,23 +361,6 @@ function displayTotalResult(result, cfg) {
   }
 }
 
-
-  container.innerHTML = html;
-
-  // Размещаем блок результатов после кнопок
-  const buttonsBlock = document.querySelector('.buttons');
-  if (buttonsBlock) {
-    buttonsBlock.insertAdjacentElement('afterend', container);
-  }
-
-
-  // Опционально: делаем кнопку "Отправить" неактивной после показа результата
-  const submitBtn = document.getElementById('submit-test');
-  if (submitBtn) {
-    submitBtn.disabled = true;
-    submitBtn.classList.add('disabled-btn');
-  }
-}
 
 
 
