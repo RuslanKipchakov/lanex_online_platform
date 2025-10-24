@@ -1,4 +1,4 @@
-/* Общий стиль */
+/* === Общий стиль === */
 body {
   font-family: Arial, sans-serif;
   font-size: 16px;
@@ -20,7 +20,7 @@ body {
   box-sizing: border-box;
 }
 
-/* Logo Section - optimized for mobile */
+/* === Логотип и заголовки === */
 .logo-section {
   text-align: center;
   margin-bottom: 15px;
@@ -28,13 +28,12 @@ body {
 }
 
 .logo {
-  width: 120px; /* Much smaller for mobile */
+  width: 120px;
   height: auto;
   display: block;
   margin: 0 auto;
 }
 
-/* Заголовки - optimized for mobile */
 h1 {
   font-weight: 600;
   margin-bottom: 12px;
@@ -54,7 +53,7 @@ h3 {
   font-size: 1.1em;
 }
 
-/* Текст вопроса */
+/* === Вопросы и варианты === */
 .task-question {
   display: flex;
   align-items: flex-start;
@@ -63,7 +62,6 @@ h3 {
   font-size: 0.95em;
 }
 
-/* Нумерация */
 .task-question .num {
   display: inline-block;
   width: 24px;
@@ -90,14 +88,13 @@ h3 {
   margin: 0;
 }
 
-/* Аудио - optimized for mobile */
+/* === Аудио === */
 audio {
   margin: 6px 0;
   width: 100%;
   max-width: 300px;
 }
 
-/* Заглушка для аудио */
 .audio-locked {
   color: #999;
   font-size: 13px;
@@ -105,33 +102,41 @@ audio {
   padding: 4px 0;
 }
 
-/* Текстовые ответы */
+/* === Текстовые ответы === */
 textarea {
   line-height: 1.2;
   width: 100%;
   min-height: 24px;
   padding: 8px;
-  font-size: 16px; /* Keep 16px to prevent zoom on iOS */
+  font-size: 16px; /* чтобы избежать зума на iOS */
   border: 1px solid #ccc;
   border-radius: 5px;
   resize: vertical;
   box-sizing: border-box;
 }
 
-/* Кнопки - optimized for mobile */
-button {
+/* === Универсальный стиль кнопок === */
+button,
+#back-button {
   font-weight: 500;
-  background: #007bff;
-  color: white;
   border: none;
   border-radius: 6px;
   padding: 12px 20px;
   margin: 10px 5px 0 0;
   font-size: 16px;
   cursor: pointer;
-  transition: background 0.2s;
+  transition: background 0.2s, transform 0.1s;
   width: 100%;
   max-width: 200px;
+  box-sizing: border-box;
+  line-height: normal;
+  height: auto;
+}
+
+/* Кнопка "Отправить" (основная) */
+button {
+  background: #007bff;
+  color: white;
 }
 
 button:hover {
@@ -142,21 +147,37 @@ button:active {
   transform: scale(0.97);
 }
 
-#cancelBtn {
-  background: #ccc;
-  color: #222;
+/* Кнопка "Назад" */
+#back-button {
+  background: #6c757d;
+  color: white;
 }
 
-#cancelBtn:hover {
-  background: #999;
+#back-button:hover {
+  background: #5a6268;
 }
 
+#back-button:active {
+  transform: scale(0.97);
+}
+
+/* Неактивная кнопка */
+button.disabled-btn {
+  background-color: #aaa;
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+/* === Блок кнопок === */
 .buttons {
-  text-align: center;
-  margin-top: 20px;
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 25px;
 }
 
-/* Карточка вопроса */
+/* === Карточка вопроса === */
 .question {
   background: #fff;
   border: 1px solid #ddd;
@@ -166,7 +187,6 @@ button:active {
   box-shadow: 0 1px 3px rgba(0,0,0,0.1);
 }
 
-/* Подсветка целого блока */
 .question.correct-block {
   background-color: #d4edda;
   border: 2px solid #28a745;
@@ -185,25 +205,38 @@ button:active {
   font-size: 0.9em;
 }
 
-/* Общий итог */
+/* === Итоговый блок === */
 .total-score {
-  margin: 15px auto;
-  font-size: 18px;
-  font-weight: bold;
+  margin: 25px auto 30px;
+  padding: 20px;
+  border-radius: 10px;
+  background-color: #f9f9f9;
   text-align: center;
-  color: #222;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
 }
 
-.open-input {
-  line-height: 1.2;
-  width: 100%;
-  padding: 8px;
-  font-size: 16px;
-  border: 1px solid #ccc;
-  border-radius: 5px;
-  box-sizing: border-box;
+.total-score .note {
+  font-size: 0.9rem;
+  color: #555;
+  margin-top: -10px;
+  margin-bottom: 15px;
 }
 
+.final-score {
+  font-size: 1.2rem;
+  margin-top: 10px;
+  font-weight: bold;
+}
+
+.level-confirmed {
+  color: #198754; /* зелёный */
+}
+
+.level-not-confirmed {
+  color: #dc3545; /* красный */
+}
+
+/* === Прочие элементы === */
 .reading-passage {
   background: #fff;
   border: 1px solid #ddd;
@@ -230,6 +263,7 @@ button:active {
   font-size: 0.9em;
 }
 
+/* === Текстовое поле письма === */
 .writing-textarea {
   width: 100%;
   border: 1px solid #ccc;
@@ -248,7 +282,7 @@ button:active {
   box-shadow: 0 0 4px rgba(0,123,255,0.4);
 }
 
-/* --- Drag&Drop (единый стиль) --- */
+/* === Drag&Drop === */
 .dragdrop-shared {
   display: flex;
   flex-wrap: wrap;
@@ -312,64 +346,7 @@ button:active {
   color: #222;
 }
 
-.drag-item.selected {
-  border: 2px solid #007bff;
-  background: #eaf2ff;
-}
-
-.chip-answer {
-  display: inline-block;
-  background: #fff3e0;
-  border: 2px solid #ff9800;
-  border-radius: 6px;
-  padding: 4px 8px;
-  margin: 2px;
-  font-weight: 600;
-  color: #333;
-  box-shadow: 0 1px 2px rgba(0,0,0,0.1);
-  font-size: 0.85em;
-}
-
-/* Disable user interaction with the progress/seek bar */
-.plyr__progress {
-  pointer-events: none;
-}
-
-/* Поле ввода имени */
-.user-info {
-  background: #fff;
-  border: 1px solid #ddd;
-  border-radius: 8px;
-  padding: 12px;
-  margin-bottom: 15px;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-}
-
-.user-info label {
-  display: block;
-  margin-bottom: 6px;
-  font-weight: 600;
-  color: #333;
-  font-size: 0.95em;
-}
-
-.user-input {
-  width: 100%;
-  padding: 10px 12px;
-  font-size: 16px;
-  border: 1px solid #ccc;
-  border-radius: 6px;
-  box-sizing: border-box;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
-}
-
-.user-input:focus {
-  border-color: #007bff;
-  outline: none;
-  box-shadow: 0 0 4px rgba(0,123,255,0.4);
-}
-
-/* === Empty form warning === */
+/* === Предупреждение при пустой форме === */
 .empty-warning {
   background: #ffecec;
   color: #b30000;
@@ -378,37 +355,17 @@ button:active {
   padding: 12px;
   margin: 15px auto;
   text-align: center;
-  max-width: 100%;
   font-size: 1em;
   animation: fadeIn 0.3s ease-in-out;
 }
 
-/* Instructions */
-.instructions {
-  background: #fff8e1;
-  border: 1px solid #ffd54f;
-  border-radius: 8px;
-  padding: 12px;
-  margin-bottom: 15px;
-  font-size: 0.9em;
-}
-
-.instructions ul {
-  margin: 8px 0;
-  padding-left: 20px;
-}
-
-.instructions li {
-  margin-bottom: 5px;
-}
-
-/* Небольшая анимация появления */
+/* === Анимация === */
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(-8px); }
   to { opacity: 1; transform: translateY(0); }
 }
 
-/* Mobile optimizations */
+/* === Мобильная адаптация === */
 @media (max-width: 480px) {
   .container {
     padding: 10px;
@@ -430,125 +387,9 @@ button:active {
     padding: 10px;
   }
 
-  button {
+  button,
+  #back-button {
     padding: 10px 16px;
     font-size: 15px;
   }
-}
-
-.total-score {
-  text-align: center;
-  margin-top: 25px;
-  margin-bottom: 30px;
-  padding: 20px;
-  border-top: 1px solid #ccc;
-}
-
-.total-score .note {
-  font-size: 0.9rem;
-  color: #555;
-  margin-top: -10px;
-  margin-bottom: 15px;
-}
-
-.total-score .final-score {
-  font-size: 1.2rem;
-  font-weight: bold;
-  margin: 12px 0;
-  padding: 10px 14px;
-  border-radius: 8px;
-  display: inline-block;
-  transition: background-color 0.3s ease, color 0.3s ease;
-}
-
-.level-confirmed {
-  background-color: #e6f9e6;
-  color: #1b751b;
-  border: 1px solid #53c153;
-}
-
-.level-not-confirmed {
-  background-color: #ffe6e6;
-  color: #a32626;
-  border: 1px solid #e67c7c;
-}
-
-/* Блок итогов */
-.total-score {
-  margin-top: 30px;
-  padding: 20px;
-  border-radius: 10px;
-  background-color: #f9f9f9;
-  text-align: center;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
-}
-
-/* Примечание под заголовком */
-.total-score .note {
-  font-size: 0.9rem;
-  color: #555;
-  margin-top: -10px;
-  margin-bottom: 15px;
-}
-
-/* Подсветка результата */
-.final-score {
-  font-size: 1.2rem;
-  margin-top: 10px;
-}
-
-.level-confirmed {
-  color: #198754; /* зелёный */
-  font-weight: bold;
-}
-
-.level-not-confirmed {
-  color: #dc3545; /* красный */
-  font-weight: bold;
-}
-
-/* Неактивная кнопка */
-button.disabled-btn {
-  background-color: #aaa;
-  cursor: not-allowed;
-  opacity: 0.7;
-}
-
-/* === Кнопка "Назад" (в стиле формы заявки) === */
-#back-button {
-  background: #6c757d;       /* серо-синий тон, как secondary */
-  color: white;
-  border: none;
-  border-radius: 6px;
-  padding: 12px 20px;
-  margin: 10px 5px 0 0;
-  font-size: 16px;
-  cursor: pointer;
-  transition: background 0.2s, transform 0.1s;
-  width: 100%;
-  max-width: 200px;
-
-  /* добавлено для точного совпадения с кнопкой "Отправить" */
-  height: auto;
-  line-height: normal;
-  box-sizing: border-box;
-  font-weight: 500;
-}
-
-
-#back-button:hover {
-  background: #5a6268;       /* немного темнее при наведении */
-}
-
-#back-button:active {
-  transform: scale(0.97);
-}
-
-/* Центровка блока с кнопками (одинаковая для обеих) */
-.buttons {
-  display: flex;
-  justify-content: center;
-  gap: 10px;
-  flex-wrap: wrap;
-  margin-top: 25px;
 }
