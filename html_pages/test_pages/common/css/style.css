@@ -472,3 +472,53 @@ button:active {
   color: #a32626;
   border: 1px solid #e67c7c;
 }
+
+/* Блок итогов */
+.total-score {
+  margin-top: 30px;
+  padding: 20px;
+  border-radius: 10px;
+  background-color: #f9f9f9;
+  text-align: center;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+}
+
+/* Примечание под заголовком */
+.total-score .note {
+  font-size: 0.9rem;
+  color: #555;
+  margin-top: -10px;
+  margin-bottom: 15px;
+}
+
+/* Подсветка результата */
+.final-score {
+  font-size: 1.2rem;
+  margin-top: 10px;
+}
+
+.level-confirmed {
+  color: #198754; /* зелёный */
+  font-weight: bold;
+}
+
+.level-not-confirmed {
+  color: #dc3545; /* красный */
+  font-weight: bold;
+}
+
+/* Неактивная кнопка */
+button.disabled-btn {
+  background-color: #aaa;
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+/* Центровка кнопок */
+.buttons {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 25px;
+}

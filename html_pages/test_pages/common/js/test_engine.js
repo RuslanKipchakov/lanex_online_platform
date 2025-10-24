@@ -310,26 +310,19 @@ function displayTotalResult(result, cfg) {
     container = document.createElement('div');
     container.id = cfg.resultContainerIds[0];
     container.className = 'total-score';
-
-    // Найдём кнопку "Назад", чтобы вставить результат перед ней
-    const backButton = document.getElementById('back-button');
-    if (backButton && backButton.parentNode === root) {
-      root.insertBefore(container, backButton);
-    } else {
-      root.appendChild(container);
-    }
-
+    root.appendChild(container);
   }
 
   const total = result.total || result['total'] || '';
-  const numericTotal = parseFloat(total); // пытаемся извлечь число (например, "75%")
+  const numericTotal = parseFloat(total); // извлекаем число (например, "75%")
 
-  // Определяем класс подсветки
+  // Определяем подсветку
   let levelClass = '';
   if (!isNaN(numericTotal)) {
     levelClass = numericTotal >= 70 ? 'level-confirmed' : 'level-not-confirmed';
   }
 
+  // Формируем HTML
   let html = `
     <h2>Спасибо за прохождение теста!</h2>
     <p class="note">
@@ -349,7 +342,21 @@ function displayTotalResult(result, cfg) {
   }
 
   container.innerHTML = html;
+
+  // Сдвигаем блок результатов перед кнопками
+  const buttonsBlock = document.querySelector('.buttons');
+  if (buttonsBlock && container.nextSibling !== buttonsBlock) {
+    buttonsBlock.parentNode.insertBefore(container, buttonsBlock);
+  }
+
+  // Опционально: делаем кнопку "Отправить" неактивной после показа результата
+  const submitBtn = document.getElementById('submit-test');
+  if (submitBtn) {
+    submitBtn.disabled = true;
+    submitBtn.classList.add('disabled-btn');
+  }
 }
+
 
 
 function hideSubmitButton(cfg) {
