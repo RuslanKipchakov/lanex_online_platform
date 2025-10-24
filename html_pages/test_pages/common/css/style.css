@@ -527,7 +527,14 @@ button.disabled-btn {
   transition: background 0.2s, transform 0.1s;
   width: 100%;
   max-width: 200px;
+
+  /* добавлено для точного совпадения с кнопкой "Отправить" */
+  height: auto;
+  line-height: normal;
+  box-sizing: border-box;
+  font-weight: 500;
 }
+
 
 #back-button:hover {
   background: #5a6268;       /* немного темнее при наведении */

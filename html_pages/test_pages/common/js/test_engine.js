@@ -314,15 +314,13 @@ function displayTotalResult(result, cfg) {
   }
 
   const total = result.total || result['total'] || '';
-  const numericTotal = parseFloat(total); // извлекаем число (например, "75%")
+  const numericTotal = parseFloat(total);
 
-  // Определяем подсветку
   let levelClass = '';
   if (!isNaN(numericTotal)) {
     levelClass = numericTotal >= 70 ? 'level-confirmed' : 'level-not-confirmed';
   }
 
-  // Формируем HTML
   let html = `
     <h2>Спасибо за прохождение теста!</h2>
     <p class="note">
@@ -340,6 +338,29 @@ function displayTotalResult(result, cfg) {
       html += `<p><strong>${taskId}:</strong> ${taskRes.score}</p>`;
     }
   }
+
+  container.innerHTML = html;
+
+  // 🟢 Теперь вставляем результат ПЕРЕД кнопкой "Назад", если она есть
+  const backBtn = document.getElementById('back-button');
+  if (backBtn && backBtn.parentNode) {
+    backBtn.parentNode.insertBefore(container, backBtn);
+  } else {
+    // Если кнопки "Назад" нет — вставляем после блока кнопок
+    const buttonsBlock = document.querySelector('.buttons');
+    if (buttonsBlock) {
+      buttonsBlock.insertAdjacentElement('afterend', container);
+    }
+  }
+
+  // Делаем кнопку "Отправить" неактивной
+  const submitBtn = document.getElementById('submit-test');
+  if (submitBtn) {
+    submitBtn.disabled = true;
+    submitBtn.classList.add('disabled-btn');
+  }
+}
+
 
   container.innerHTML = html;
 
