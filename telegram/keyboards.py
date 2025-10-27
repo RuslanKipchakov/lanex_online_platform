@@ -2,7 +2,7 @@ from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, WebAppInfo
 import time
 import urllib.parse
 
-BASE_URL = "https://lanexonlineplatform-mynewenv.up.railway.app"
+BASE_URL = "https://lanex-online-platform.vercel.app"
 
 
 def versioned_url(path: str, init_data: str = None) -> str:
