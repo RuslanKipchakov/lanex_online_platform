@@ -1,7 +1,20 @@
-import asyncio
+"""
+Функции для проверки тестов пользователя по ключу правильных ответов.
+
+Содержит:
+    - глобальный словарь ключей ответов;
+    - нормализацию ответов;
+    - проверку отдельного ответа;
+    - асинхронную проверку всех результатов теста.
+"""
+
+from typing import Dict, Any, Union
+
+# Тип ключей: уровень -> таск -> номер вопроса -> правильный ответ
+AnswerKeyType = Dict[str, Dict[str, Union[str, list[str]]]]
 
 # ==== Глобальные ключи правильных ответов ====
-global_answer_key = {
+global_answer_key: Dict[str, AnswerKeyType] = {
     "Starter": {
         "task1": {
             "1": "C", "2": "C", "3": "B", "4": "C", "5": "C",
@@ -39,7 +52,7 @@ global_answer_key = {
             "6": "B", "7": "B", "8": "A", "9": "C", "10": "C"
         }
     },
-    "Pre_Intermediate": {
+    "Pre-Intermediate": {
         "task1": {
             "1": "B", "2": "B", "3": "A", "4": "B", "5": "B",
             "6": "C", "7": "C", "8": "A", "9": "B", "10": "B",
@@ -87,7 +100,7 @@ global_answer_key = {
             "11": "B", "12": "C", "13": "C", "14": "D", "15": "C"
         }
     },
-    "Upper_Intermediate": {
+    "Upper-Intermediate": {
         "task1": {
             "1": "A", "2": "A", "3": "A", "4": "C", "5": "A",
             "6": "A", "7": "B", "8": "B", "9": "B", "10": "A",
@@ -106,14 +119,24 @@ global_answer_key = {
 }
 
 
-# ==== Нормализация и проверка ====
 def normalize_answer(ans: str) -> str:
-    """Приводит ответ к стандартной форме для сравнения."""
+    """
+    Приводит ответ пользователя к стандартной форме для сравнения.
+
+    Преобразования:
+        - Стриминг пробелов.
+        - Приведение к нижнему регистру.
+        - Словесные числа → цифры.
+
+    Аргументы:
+        ans (str): Исходный ответ пользователя.
+
+    Returns:
+        str: Нормализованный ответ.
+    """
     if not ans:
         return ""
     ans = ans.strip().lower()
-
-    # Словесные числа → цифры
     mapping = {
         "one": "1", "two": "2", "three": "3",
         "four": "4", "five": "5", "six": "6",
@@ -122,37 +145,64 @@ def normalize_answer(ans: str) -> str:
     return mapping.get(ans, ans)
 
 
-def is_correct(user_answer: str, correct_answer) -> bool:
-    """Проверяет, совпадает ли ответ пользователя с правильным."""
+def is_correct(user_answer: str, correct_answer: Union[str, list, tuple, set]) -> bool:
+    """
+    Проверяет, совпадает ли ответ пользователя с правильным.
+
+    Аргументы:
+        user_answer (str): Ответ пользователя.
+        correct_answer (str | list | tuple | set): Правильный ответ или варианты.
+
+    Returns:
+        bool: True, если ответ верный, иначе False.
+    """
     user_norm = normalize_answer(user_answer)
 
     if isinstance(correct_answer, str):
         return user_norm == normalize_answer(correct_answer)
 
     if isinstance(correct_answer, (list, tuple, set)):
-        return user_norm in [normalize_answer(a) for a in correct_answer]
+        return user_norm in {normalize_answer(a) for a in correct_answer}
 
     return False
 
 
-# ==== Основная функция проверки ====
-async def check_test_results(frontend_response: dict) -> dict:
-    """Проверяет ответы пользователя по ключу правильных ответов."""
-    result = {}
-    level = frontend_response["level"]
-    level_key = global_answer_key.get(level, {})
+async def check_test_results(frontend_response: dict[str, dict]) -> dict[str, Any]:
+    """
+    Асинхронно проверяет ответы пользователя по ключу правильных ответов.
 
+    Аргументы:
+        frontend_response (dict): Структура с ответами пользователя.
+            Пример:
+                {
+                    "level": "Starter",
+                    "answers": {
+                        "task1": {"1": "A", "2": "B", ...},
+                        "task2": {...},
+                        ...
+                    }
+                }
+
+    Returns:
+        dict: Результаты проверки с пометками "correct"/"incorrect" и общим процентом.
+    """
+    result: dict[str, Any] = {}
+    level_raw = frontend_response.get("level")
+    if not isinstance(level_raw, str):
+        level = ""
+    else:
+        level = level_raw
+
+    level_key: AnswerKeyType = global_answer_key.get(level, {})
     total_scores = []
 
-    for task, answers in frontend_response["answers"].items():
-        # Если для этого таска нет ключа → открытые задания
+    for task, answers in frontend_response.get("answers", {}).items():
         if task not in level_key:
             result[task] = "open"
             continue
 
-        # Проверка закрытых вопросов
         correct_answers = level_key[task]
-        task_result = {}
+        task_result: dict[str, str] = {}
         score = 0
 
         for q_num, user_answer in answers.items():
@@ -166,11 +216,7 @@ async def check_test_results(frontend_response: dict) -> dict:
         result[task] = task_result
         total_scores.append(score / len(correct_answers))
 
-    # Итоговый процент (среднее по всем таскам)
-    if total_scores:
-        avg_score = sum(total_scores) / len(total_scores) * 100
-        result["total"] = f"{avg_score:.1f}%"
-    else:
-        result["total"] = "0%"
+    # Итоговый процент (среднее по всем закрытым таскам)
+    result["total"] = f"{sum(total_scores) / len(total_scores) * 100:.1f}%" if total_scores else "0%"
 
     return result

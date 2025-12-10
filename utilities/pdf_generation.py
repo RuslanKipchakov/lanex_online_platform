@@ -1,5 +1,20 @@
-from datetime import datetime
+"""
+Утилиты для генерации PDF-файлов (заявки и отчёта о тестировании).
+
+Версия: V2 — унифицированные стили, безопасная регистрация шрифтов,
+единый формат временных меток и аккуратное логирование.
+
+Функции:
+    - generate_application_pdf(...)
+    - generate_test_report(...)
+"""
+
+from __future__ import annotations
+
 import os
+from datetime import datetime
+from typing import Any, Dict, List, Optional
+
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
@@ -15,47 +30,148 @@ from reportlab.platypus import (
     PageTemplate,
     FrameBreak,
     Image,
-    KeepTogether,
 )
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.pdfbase.cidfonts import UnicodeCIDFont
 
+from logging_config import logger
 
-# === Безопасная регистрация шрифтов ===
+# ---------------------------------------------------------------------
+# Конфигурация шрифтов и стилей
+# ---------------------------------------------------------------------
 FONT_DIR = os.path.join(os.path.dirname(__file__), "fonts")
-FONT_PATH = os.path.join(FONT_DIR, "DejaVuSans.ttf")
+FONT_REGULAR_PATH = os.path.join(FONT_DIR, "DejaVuSans.ttf")
 FONT_BOLD_PATH = os.path.join(FONT_DIR, "DejaVuSans-Bold.ttf")
 
+DEFAULT_FALLBACK_FONT = "HeiseiKakuGo-W5"  # надёжный CID-шрифт как fallback
 
-def safe_register_fonts():
-    """Безопасная регистрация шрифтов с fallback."""
+# Регистрация шрифтов с безопасным fallback
+def _register_fonts() -> None:
+    """Пытается зарегистрировать DejaVu шрифты, при ошибке использует CID-фонт."""
     try:
-        if os.path.exists(FONT_PATH):
-            pdfmetrics.registerFont(TTFont("DejaVuSans", FONT_PATH))
+        if os.path.exists(FONT_REGULAR_PATH):
+            pdfmetrics.registerFont(TTFont("DejaVuSans", FONT_REGULAR_PATH))
         if os.path.exists(FONT_BOLD_PATH):
             pdfmetrics.registerFont(TTFont("DejaVuSans-Bold", FONT_BOLD_PATH))
         else:
-            pdfmetrics.registerFont(TTFont("DejaVuSans-Bold", FONT_PATH))
-    except Exception:
-        pdfmetrics.registerFont(UnicodeCIDFont("HeiseiKakuGo-W5"))
+            # если bold отсутствует, регистрируем regular с другим именем
+            if os.path.exists(FONT_REGULAR_PATH):
+                pdfmetrics.registerFont(TTFont("DejaVuSans-Bold", FONT_REGULAR_PATH))
+    except Exception as exc:  # pragma: no cover - защитный fallback
+        logger.warning("Не удалось зарегистрировать DejaVu шрифты, использую CID-фонт: %s", exc)
+        pdfmetrics.registerFont(UnicodeCIDFont(DEFAULT_FALLBACK_FONT))
 
 
-def safe_font(name: str) -> str:
-    """Проверяет, зарегистрирован ли шрифт, и при необходимости делает fallback."""
+def _safe_font(name: str) -> str:
+    """Возвращает имя шрифта, если он зарегистрирован, иначе fallback."""
     try:
         pdfmetrics.getFont(name)
         return name
-    except KeyError:
-        return "HeiseiKakuGo-W5"
+    except Exception:
+        return DEFAULT_FALLBACK_FONT
 
 
-# Регистрируем шрифты при импорте
-safe_register_fonts()
+# Выполняем регистрацию при импорте
+_register_fonts()
+
+FONT_REGULAR = _safe_font("DejaVuSans")
+FONT_BOLD = _safe_font("DejaVuSans-Bold")
+
+# Единый формат временной метки для имён файлов
+TIMESTAMP_FMT = "%Y-%m-%d_%H-%M-%S"
+
+# ---------------------------------------------------------------------
+# Унифицированные стили Paragraph/Table
+# ---------------------------------------------------------------------
+def _make_styles() -> Dict[str, ParagraphStyle]:
+    """Создаёт и возвращает словарь часто используемых ParagraphStyle."""
+    base = getSampleStyleSheet()
+    return {
+        "Title": ParagraphStyle(
+            "Title",
+            parent=base["Heading1"],
+            fontName=FONT_BOLD,
+            fontSize=16,
+            alignment=1,
+            spaceAfter=12,
+        ),
+        "Subtitle": ParagraphStyle(
+            "Subtitle",
+            fontName=FONT_BOLD,
+            fontSize=13,
+            alignment=1,
+            spaceBefore=12,
+            spaceAfter=8,
+            textColor=colors.darkblue,
+        ),
+        "Section": ParagraphStyle(
+            "Section",
+            fontName=FONT_BOLD,
+            fontSize=12,
+            leftIndent=0.2 * cm,
+            spaceBefore=8,
+            spaceAfter=6,
+        ),
+        "Body": ParagraphStyle(
+            "Body",
+            fontName=FONT_REGULAR,
+            fontSize=11,
+            leading=14,
+        ),
+        "Small": ParagraphStyle(
+            "Small",
+            fontName=FONT_REGULAR,
+            fontSize=9,
+        ),
+    }
 
 
-def _add_background_and_border(canvas, doc):
-    """Добавляет фон и рамку вокруг страницы."""
+_STYLES = _make_styles()
+
+def _p(text: str) -> Paragraph:
+    return Paragraph(text.replace("\n", "<br/>"), _STYLES["Body"])
+
+# ---------------------------------------------------------------------
+# Вспомогательные функции для табличек и логотипа
+# ---------------------------------------------------------------------
+def _add_logo_to_elements(elements: list, logo_name: str = "logo_header.png") -> None:
+    """Добавляет логотип в начало элементов, если файл логотипа существует."""
+    logo_path = os.path.join(os.path.dirname(__file__), logo_name)
+    if os.path.exists(logo_path):
+        try:
+            img = Image(logo_path, width=3 * cm, height=1 * cm)
+            img.hAlign = "CENTER"
+            elements.append(img)
+            elements.append(Spacer(1, 6))
+        except Exception as exc:
+            logger.debug("Не удалось добавить логотип в PDF: %s", exc)
+
+
+def _make_table(
+    data: List[List[Any]],
+    col_widths: Optional[List[float]] = None,
+    repeat_header: bool = False,
+    align: str = "CENTER"
+) -> Table:
+    """Создаёт таблицу с единым стилем для проекта."""
+    table = Table(data, colWidths=col_widths, repeatRows=1 if repeat_header else 0)
+    table_style = TableStyle([
+        ("GRID", (0, 0), (-1, -1), 0.5, colors.grey),
+        ("FONTNAME", (0, 0), (-1, -1), FONT_REGULAR),
+        ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+        ("ALIGN", (0, 0), (-1, -1), align),
+        ("WORDWRAP", (0, 0), (-1, -1), "CJK"),
+    ])
+    # если есть header — делаем ему фон
+    if data and isinstance(data[0], (list, tuple)):
+        table_style.add("BACKGROUND", (0, 0), (-1, 0), colors.whitesmoke)
+    table.setStyle(table_style)
+    return table
+
+
+def _add_background_and_border(canvas, doc) -> None:
+    """Единый фон и рамка страницы для всех PDF."""
     canvas.saveState()
     canvas.setFillColorRGB(0.99, 0.99, 0.97)
     canvas.rect(0, 0, A4[0], A4[1], fill=1, stroke=0)
@@ -66,215 +182,302 @@ def _add_background_and_border(canvas, doc):
     canvas.restoreState()
 
 
-# === Генерация PDF заявки ===
+# ---------------------------------------------------------------------
+# Функция перевода слов
+# ---------------------------------------------------------------------
+TRANSLATIONS = {
+    "school": "Школа",
+    "university": "Университет",
+    "self_study": "Самостоятельное обучение",
+    "courses": "Курсы",
+    "never": "Никогда",
+    "individual": "Индивидуальный",
+    "pair": "Парный",
+    "group": "Групповой",
+    "online": "Онлайн",
+    "offline": "В классе",
+    "friends": "Друзья",
+    "internet": "Интернет",
+    "telegram": "Телеграм",
+    "other": "Другое"
+}
+
+def _tr(value: str | None) -> str:
+    if value is None:
+        return "—"
+    return TRANSLATIONS.get(value.lower(), value)
+
+
+# ---------------------------------------------------------------------
+# Основные публичные функции
+# ---------------------------------------------------------------------
 def generate_application_pdf(
     applicant_name: str,
     phone_number: str,
     applicant_age: int,
-    preferred_class_format: list[str],
-    preferred_study_mode: list[str],
-    level: str | None,
-    possible_scheduling: list[dict[str, list[str]]],
-    reference_source: str | None,
+    preferred_class_format: List[str],
+    preferred_study_mode: List[str],
+    level: Optional[str],
+    possible_scheduling: List[Dict[str, List[str]]],
+    reference_source: Optional[str],
     need_ielts: bool,
     studied_at_lanex: bool,
-    previous_experience: list[str] | None,
+    previous_experience: Optional[List[str]],
     telegram_id: int,
-    username: str,
     notes: str = "",
-    output_dir: str | None = None,
+    output_dir: Optional[str] = None,
+    is_update: bool = False,
 ) -> str:
-    """Генерация PDF заявки с блоком 'Заметки администратора'."""
-    os.makedirs(output_dir, exist_ok=True)
-    timestamp = datetime.now().strftime("%d-%m-%Y_%H%M%S")
-    filename = f"{username}_{timestamp}_{telegram_id}.pdf"
-    filepath = os.path.join(output_dir, filename)
+    """
+    Генерирует PDF-файл заявки и возвращает путь к файлу.
 
-    doc = BaseDocTemplate(
-        filepath,
-        pagesize=A4,
-        rightMargin=2 * cm,
-        leftMargin=2 * cm,
-        topMargin=1.5 * cm,
-        bottomMargin=1.5 * cm,
-    )
+    Args:
+        applicant_name: Имя заявителя.
+        phone_number: Телефон.
+        applicant_age: Возраст.
+        preferred_class_format: Список форматов (strings).
+        preferred_study_mode: Список режимов (strings).
+        level: Уровень (может быть None).
+        possible_scheduling: Список словарей {"day": str, "times": [str]}.
+        reference_source: Откуда узнал пользователь.
+        need_ielts: Нужен ли IELTS.
+        studied_at_lanex: Брал ли ранее занятия в Lanex.
+        previous_experience: Список предыдущего опыта.
+        telegram_id: Telegram ID пользователя.
+        notes: Дополнительные заметки администратора.
+        output_dir: Папка для сохранения (по умолчанию ./generated_pdfs).
+        is_update: Флаг — это обновлённая заявка.
 
-    # === Стили ===
-    title_style = ParagraphStyle("Title", fontName=safe_font("DejaVuSans-Bold"), fontSize=16, alignment=1, spaceAfter=14)
-    subtitle_style = ParagraphStyle("Subtitle", fontName=safe_font("DejaVuSans-Bold"), fontSize=13, alignment=1, spaceBefore=16, spaceAfter=8)
-    normal_style = ParagraphStyle("Normal", fontName=safe_font("DejaVuSans"), fontSize=11, leading=14)
+    Returns:
+        str: Абсолютный путь к сгенерированному PDF.
+    """
 
-    elements = []
+    try:
+        out_dir = output_dir or os.path.join(os.getcwd(), "generated_pdfs")
+        os.makedirs(out_dir, exist_ok=True)
 
-    # === Логотип и заголовок ===
-    logo_path = os.path.join(os.path.dirname(__file__), "logo_header.png")
-    if os.path.exists(logo_path):
-        logo = Image(logo_path, width=3 * cm, height=1 * cm)
-        logo.hAlign = "CENTER"
-        elements += [logo, Spacer(1, 6)]
-    elements += [Paragraph("Форма заявки Lanex", title_style), Spacer(1, 12)]
+        timestamp = datetime.now().strftime(TIMESTAMP_FMT)
+        prefix = "UPDATED_APPLICATION" if is_update else "NEW_APPLICATION"
+        safe_name = applicant_name.replace(" ", "_")
+        filename = f"{prefix}_{safe_name}_{timestamp}_{telegram_id}.pdf"
+        filepath = os.path.join(out_dir, filename)
 
-    data = [
-        ["Полное имя", applicant_name],
-        ["Номер телефона", phone_number],
-        ["Возраст", str(applicant_age)],
-        ["Формат занятий", ", ".join(preferred_class_format)],
-        ["Режим обучения", ", ".join(preferred_study_mode)],
-        ["Уровень", level or "—"],
-        ["Источник информации", reference_source or "—"],
-        ["Необходим IELTS", "Да" if need_ielts else "Нет"],
-        ["Ранее обучался(-ась) в Lanex", "Да" if studied_at_lanex else "Нет"],
-        ["Предыдущий опыт", ", ".join(previous_experience) if previous_experience else "—"],
-    ]
+        doc = BaseDocTemplate(
+            filepath,
+            pagesize=A4,
+            rightMargin=2 * cm,
+            leftMargin=2 * cm,
+            topMargin=1.5 * cm,
+            bottomMargin=1.5 * cm,
+        )
 
-    table = Table(data, colWidths=[6 * cm, 9 * cm])
-    table.setStyle(TableStyle([
-        ("BOX", (0, 0), (-1, -1), 1, colors.black),
-        ("INNERGRID", (0, 0), (-1, -1), 0.5, colors.grey),
-        ("FONTNAME", (0, 0), (-1, -1), safe_font("DejaVuSans")),
-        ("VALIGN", (0, 0), (-1, -1), "TOP"),
-        ("BACKGROUND", (0, 0), (0, -1), colors.whitesmoke),
-    ]))
-    elements += [table, Spacer(1, 12)]
+        elements: List[Any] = []
 
-    # === Расписание ===
-    elements.append(Paragraph("Доступное расписание", subtitle_style))
-    schedule_data = [["День", "Предпочтительные часы"]]
-    for slot in possible_scheduling:
-        schedule_data.append([
-            slot.get("day", "—"),
-            ", ".join(slot.get("times", [])) or "—",
-        ])
-    schedule_table = Table(schedule_data, colWidths=[4 * cm, 11 * cm])
-    schedule_table.setStyle(TableStyle([
-        ("BOX", (0, 0), (-1, -1), 1, colors.black),
-        ("INNERGRID", (0, 0), (-1, -1), 0.5, colors.grey),
-        ("FONTNAME", (0, 0), (-1, -1), safe_font("DejaVuSans")),
-        ("BACKGROUND", (0, 0), (-1, 0), colors.lightgrey),
-    ]))
-    elements.append(schedule_table)
-    elements.append(FrameBreak())
+        # Верх страницы
+        _add_logo_to_elements(elements)
+        elements.append(Paragraph("Заявка на обучение в Lanex", _STYLES["Title"]))
+        elements.append(Spacer(1, 10))
 
-    # === Нижний блок ===
-    elements += [Paragraph("Заметки администратора", subtitle_style), Spacer(1, 6)]
-    notes_table = Table(
-        [[Paragraph(notes, normal_style) if notes else ""] for _ in range(4)],
-        colWidths=[15 * cm],
-        rowHeights=[1.2 * cm] * 4,
-        style=TableStyle([
+        # Основная таблица
+        data = [
+            ["Полное имя", _p(applicant_name)],
+            ["Номер телефона", _p(phone_number)],
+            ["Возраст", _p(str(applicant_age))],
+            ["Формат занятий", _p(", ".join(_tr(x) for x in preferred_class_format))],
+            ["Режим обучения", _p(", ".join(_tr(x) for x in preferred_study_mode))],
+            ["Уровень", _p(level or "—")],
+            ["Источник информации", _p(_tr(reference_source) if reference_source else "—")],
+            ["Нужен IELTS", _p("Да" if need_ielts else "Нет")],
+            ["Ранее обучался(-ась) в Lanex", _p("Да" if studied_at_lanex else "Нет")],
+            ["Предыдущий опыт", _p(", ".join(_tr(x) for x in previous_experience)) if previous_experience else "—"],
+        ]
+        elements.append(_make_table(data, col_widths=[6 * cm, 9 * cm], align="LEFT"))
+        elements.append(Spacer(1, 12))
+
+        # Расписание
+        elements.append(Paragraph("Доступное расписание", _STYLES["Subtitle"]))
+        schedule_data = [[_p("День"), _p("Предпочтительные часы")]]
+        for slot in possible_scheduling:
+            schedule_data.append([
+                _p(slot.get("day", "—")),
+                _p(", ".join(slot.get("times", [])) or "—"),
+            ])
+        elements.append(_make_table(schedule_data, col_widths=[4 * cm, 11 * cm], repeat_header=True))
+
+        # ОБЯЗАТЕЛЬНЫЙ ПЕРЕКЛЮЧАТЕЛЬ НА НИЖНИЙ ФРЕЙМ
+        elements.append(FrameBreak())
+
+        # === Нижний блок: ЗАМЕТКИ ===
+        elements.append(Paragraph("Заметки администратора", _STYLES["Subtitle"]))
+        elements.append(Spacer(1, 6))
+
+        # Таблица заметок фиксированной высоты
+        notes_table = Table(
+            [[Paragraph(notes or "", _STYLES["Body"])] for _ in range(4)],
+            colWidths=[doc.width],
+            rowHeights=[1.2 * cm] * 4,
+        )
+        notes_table.setStyle(TableStyle([
             ("BOX", (0, 0), (-1, -1), 1, colors.black),
             ("INNERGRID", (0, 0), (-1, -1), 0.5, colors.grey),
             ("VALIGN", (0, 0), (-1, -1), "TOP"),
-        ]),
-    )
-    elements.append(notes_table)
+            ("FONTNAME", (0, 0), (-1, -1), FONT_REGULAR),
+        ]))
+        elements.append(notes_table)
 
-    # === Фреймы ===
-    frame_notes_height = 7 * cm
-    frame_main_height = A4[1] - frame_notes_height - doc.topMargin - doc.bottomMargin
+        # Frame'ы
+        frame_notes_height = 7 * cm
+        frame_main_height = A4[1] - frame_notes_height - doc.topMargin - doc.bottomMargin
 
-    frame_main = Frame(doc.leftMargin, doc.bottomMargin + frame_notes_height, doc.width, frame_main_height, id="main")
-    frame_notes = Frame(doc.leftMargin, doc.bottomMargin, doc.width, frame_notes_height, id="notes")
+        frame_main = Frame(
+            doc.leftMargin,
+            doc.bottomMargin + frame_notes_height,
+            doc.width,
+            frame_main_height,
+            id="main"
+        )
 
-    doc.addPageTemplates([PageTemplate(id="app_template", frames=[frame_main, frame_notes], onPage=_add_background_and_border)])
-    doc.build(elements)
-    return filepath
+        frame_notes = Frame(
+            doc.leftMargin,
+            doc.bottomMargin,
+            doc.width,
+            frame_notes_height,
+            id="notes"
+        )
+
+        doc.addPageTemplates([
+            PageTemplate(
+                id="app_template",
+                frames=[frame_main, frame_notes],
+                onPage=_add_background_and_border,
+            )
+        ])
+
+        doc.build(elements)
+        return filepath
+
+    except Exception as exc:
+        logger.exception("Ошибка при генерации PDF заявки: %s", exc)
+        raise
 
 
-# === Генерация отчёта о тесте ===
 def generate_test_report(
     test_taker: str,
     level: str,
-    closed_answers: dict,
-    open_answers: dict | None,
-    score: dict,
-    output_dir: str | None = None,
+    closed_answers: Dict[str, Dict[str, Any]],
+    open_answers: Optional[Dict[str, Dict[str, Any]]],
+    score: Dict[str, Any],
+    output_dir: Optional[str] = None,
 ) -> str:
-    """Генерация PDF-отчёта о тесте с таблицами и отзывом."""
-    reports_dir = output_dir or os.path.join(os.getcwd(), "generated_reports")
-    os.makedirs(reports_dir, exist_ok=True)
-    date_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    filename = f"TEST_REPORT_{test_taker}_{level}_{date_str.replace(':', '-').replace(' ', '_')}.pdf"
-    filepath = os.path.join(reports_dir, filename)
+    """
+    Генерирует PDF-отчёт о тестировании и возвращает путь к файлу.
 
-    doc = SimpleDocTemplate(filepath, pagesize=A4, rightMargin=2 * cm, leftMargin=2 * cm, topMargin=1.5 * cm, bottomMargin=1.5 * cm)
-    styles = getSampleStyleSheet()
-    elements = []
+    Args:
+        test_taker: Имя участника.
+        level: Уровень теста.
+        closed_answers: Структура вида {"task1": {"1": {"answer": "...", "status": "correct"}}}
+        open_answers: Открытые ответы (может быть None).
+        score: Словарь с баллами по таскам.
+        output_dir: Папка для сохранения (по умолчанию ./generated_reports).
 
-    # === Стили ===
-    title_style = ParagraphStyle("TitleStyle", parent=styles["Heading1"], fontName="DejaVuSans-Bold", alignment=1, spaceAfter=14, textColor=colors.darkblue)
-    info_style = ParagraphStyle("InfoStyle", parent=styles["Normal"], fontName="DejaVuSans", fontSize=11, spaceAfter=4)
-    subtitle_style = ParagraphStyle("Subtitle", fontName="DejaVuSans-Bold", fontSize=13, leading=15, alignment=1, spaceBefore=16, spaceAfter=8)
-    task_title_style = ParagraphStyle("TaskTitle", fontName="DejaVuSans-Bold", fontSize=12, leftIndent=0.7 * cm, spaceBefore=10, spaceAfter=4, textColor=colors.darkblue)
+    Returns:
+        str: Путь к сохранённому PDF.
+    """
+    try:
+        reports_dir = output_dir or os.path.join(os.getcwd(), "generated_reports")
+        os.makedirs(reports_dir, exist_ok=True)
 
-    # === Верхняя часть ===
-    logo_path = os.path.join(os.path.dirname(__file__), "logo_header.png")
-    if os.path.exists(logo_path):
-        logo = Image(logo_path, width=3 * cm, height=1 * cm)
-        logo.hAlign = "CENTER"
-        elements += [logo, Spacer(1, 6)]
-    elements += [
-        Paragraph("LANEX TEST REPORT", title_style),
-        Spacer(1, 10),
-        Paragraph(f"<b>Test taker:</b> {test_taker}", info_style),
-        Paragraph(f"<b>Level:</b> {level}", info_style),
-        Paragraph(f"<b>Date:</b> {date_str}", info_style),
-        Spacer(1, 14),
-    ]
+        timestamp = datetime.now().strftime(TIMESTAMP_FMT)
+        safe_taker = (test_taker or "unknown").replace(" ", "_")
+        filename = f"TEST_REPORT_{safe_taker}_{level}_{timestamp}.pdf"
+        filepath = os.path.join(reports_dir, filename)
 
-    # === Closed Tasks ===
-    elements.append(Paragraph("Closed Tasks", subtitle_style))
-    for task, questions in closed_answers.items():
-        elements += [Paragraph(task, task_title_style), Spacer(1, 6)]
-        data = [["Question", "Answer", "Status"]]
-        for q_num, q_data in questions.items():
-            data.append([q_num, q_data.get("answer", "—"), q_data.get("status", "unchecked").capitalize()])
-        table = Table(data, colWidths=[80, 250, 100], repeatRows=1)
-        table.setStyle(TableStyle([
-            ("BACKGROUND", (0, 0), (-1, 0), colors.whitesmoke),
-            ("GRID", (0, 0), (-1, -1), 0.5, colors.grey),
-            ("FONTNAME", (0, 0), (-1, -1), "DejaVuSans"),
-            ("ALIGN", (0, 0), (-1, -1), "CENTER"),
-        ]))
-        elements += [table, Spacer(1, 6)]
-        if task in score:
-            elements.append(Paragraph(f"Score: {score[task]}", task_title_style))
+        doc = SimpleDocTemplate(
+            filepath,
+            pagesize=A4,
+            rightMargin=2 * cm,
+            leftMargin=2 * cm,
+            topMargin=1.5 * cm,
+            bottomMargin=1.5 * cm,
+        )
+
+        elements: List[Any] = []
+
+        # Верхняя часть
+        _add_logo_to_elements(elements)
+        elements.append(Paragraph("LANEX TEST REPORT", _STYLES["Title"]))
+        elements.append(Spacer(1, 8))
+        info_style = _STYLES["Body"]
+        elements.append(Paragraph(f"<b>Test taker:</b> {test_taker}", info_style))
+        elements.append(Paragraph(f"<b>Level:</b> {level}", info_style))
+        elements.append(Paragraph(f"<b>Date:</b> {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}", info_style))
         elements.append(Spacer(1, 10))
 
-    # === Open Tasks ===
-    if open_answers:
-        elements.append(Paragraph("Open Task", subtitle_style))
-        for task, answers in open_answers.items():
-            for q_num, user_answer in answers.items():
-                # Заменяем переводы строк на <br/>, чтобы сохранялись абзацы
-                if isinstance(user_answer, str):
-                    formatted_answer = user_answer.replace("\n\n", "<br/><br/>").replace("\n", "<br/>")
+        # Closed tasks
+        elements.append(Paragraph("Closed Tasks", _STYLES["Subtitle"]))
+        for task, questions in closed_answers.items():
+            elements.append(Paragraph(task, _STYLES["Section"]))
+            elements.append(Spacer(1, 6))
+
+            table_data = [["Question", "Answer", "Status"]]
+            for q_num, q_data in questions.items():
+                user_answer = q_data.get("answer", "")
+                status = q_data.get("status", "unchecked")
+
+                if not user_answer:
+                    answer_display = "—"
+                    status_display = "No answer"
                 else:
-                    formatted_answer = str(user_answer)
+                    answer_display = user_answer
+                    status_display = status.capitalize()
 
-                # Формируем параграф с форматированным ответом
-                answer_paragraph = Paragraph(f"<b>Q{q_num}:</b> {formatted_answer}", info_style)
+                table_data.append([q_num, answer_display, status_display])
 
-                # Оборачиваем в таблицу, как раньше
-                answer_table = Table([[answer_paragraph]], colWidths=[440])
-                answer_table.setStyle(TableStyle([
-                    ("BOX", (0, 0), (-1, -1), 0.8, colors.grey),
-                    ("BACKGROUND", (0, 0), (-1, -1), colors.whitesmoke),
-                ]))
-                elements += [answer_table, Spacer(1, 8)]
+            table = _make_table(table_data, col_widths=[2.5 * cm, 11 * cm, 3.5 * cm], repeat_header=True)
+            elements.append(table)
+            elements.append(Spacer(1, 6))
 
-    # === Feedback ===
-    feedback_title = Paragraph("Overall Feedback", subtitle_style)
-    feedback_table = Table(
-        [[""] for _ in range(4)],
-        colWidths=[15 * cm],
-        rowHeights=[1.2 * cm] * 4,
-        style=TableStyle([
+            # Score for task if exists
+            if task in score:
+                elements.append(Paragraph(f"Score: {score[task]}", _STYLES["Section"]))
+            elements.append(Spacer(1, 8))
+
+        # Open tasks
+        if open_answers:
+            elements.append(Paragraph("Open Tasks", _STYLES["Subtitle"]))
+            for task, answers in open_answers.items():
+                elements.append(Paragraph(task, _STYLES["Section"]))
+                for q_num, user_answer in answers.items():
+                    if isinstance(user_answer, str):
+                        formatted_answer = user_answer.replace("\n\n", "<br/><br/>").replace("\n", "<br/>")
+                    else:
+                        formatted_answer = str(user_answer)
+
+                    answer_paragraph = Paragraph(f"<b>Q{q_num}:</b> {formatted_answer}", info_style)
+                    ans_table = Table([[answer_paragraph]], colWidths=[doc.width])
+                    ans_table.setStyle(TableStyle([
+                        ("BACKGROUND", (0, 0), (-1, 0), colors.whitesmoke),
+                        ("GRID", (0, 0), (-1, -1), 0.5, colors.grey),
+                        ("FONTNAME", (0, 0), (-1, -1), "DejaVuSans"),
+                    ]))
+                    elements.append(ans_table)
+                    elements.append(Spacer(1, 6))
+
+        # Feedback / overall
+        elements.append(Spacer(1, 12))
+        elements.append(Paragraph("Overall Feedback", _STYLES["Subtitle"]))
+        feedback_table = Table([[""]], colWidths=[doc.width], rowHeights=[4 * cm])
+        feedback_table.setStyle(TableStyle([
             ("BOX", (0, 0), (-1, -1), 1, colors.black),
-            ("INNERGRID", (0, 0), (-1, -1), 0.5, colors.grey),
-        ]),
-    )
-    elements.append(KeepTogether([Spacer(1, 20), feedback_title, Spacer(1, 6), feedback_table]))
+            ("FONTNAME", (0, 0), (-1, -1), FONT_REGULAR),
+            ("VALIGN", (0, 0), (-1, -1), "TOP"),
+        ]))
+        elements.append(feedback_table)
 
-    doc.build(elements, onFirstPage=_add_background_and_border, onLaterPages=_add_background_and_border)
-    return filepath
+        doc.build(elements, onFirstPage=_add_background_and_border, onLaterPages=_add_background_and_border)
+        logger.info("PDF отчёт о тесте сгенерирован: %s", filepath)
+        return filepath
+
+    except Exception as exc:
+        logger.exception("Ошибка при генерации PDF отчёта: %s", exc)
+        raise

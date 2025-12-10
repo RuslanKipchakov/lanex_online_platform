@@ -1,0 +1,312 @@
+/* === Общий стиль === */
+body {
+  font-family: Arial, sans-serif;
+  font-size: 16px;          /* основной удобный размер */
+  line-height: 1.5;
+  background: #fcfcf7;
+  margin: 0;
+  padding: 0;
+  color: #222;
+  min-height: 100vh;
+}
+
+/* Контейнер всей страницы */
+.container {
+  max-width: 100%;
+  margin: 0 auto;
+  padding: 15px;
+  background: #fcfcf7;
+  min-height: 100vh;
+  box-sizing: border-box;
+}
+
+/* Логотип и заголовки */
+.logo-section {
+  text-align: center;
+  margin-bottom: 20px;
+  padding-top: 10px;
+}
+
+.logo {
+  width: 120px;
+  height: auto;
+  display: block;
+  margin: 0 auto;
+}
+
+h1 {
+  text-align: center;
+  color: #222;
+  margin-bottom: 20px;
+  font-size: 22px;
+}
+
+h2 {
+  font-weight: 600;
+  margin-bottom: 12px;
+  font-size: 18px;
+}
+
+h3 {
+  font-weight: 600;
+  margin-bottom: 10px;
+  font-size: 16px;
+}
+
+/* Основной блок теста */
+.form-block {
+  max-width: 800px;
+  margin: 0 auto 40px auto;
+  padding: 25px 30px;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  box-sizing: border-box;
+}
+
+/* Блоки вопросов */
+.question {
+  background: #fafafa;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  padding: 12px 15px;
+  margin-bottom: 15px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+
+/* Инструкции и чтение */
+.task-instruction,
+.instructions,
+.reading-passage {
+  background: #fff8e1;
+  border: 1px solid #ffd54f;
+  border-radius: 8px;
+  padding: 12px;
+  margin-bottom: 15px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  color: #333;
+  font-size: 16px;          /* одинаковый размер со всем текстом */
+}
+
+.reading-passage p {
+  white-space: pre-line;
+  line-height: 1.5;
+  font-size: 16px;
+}
+
+/* Вопросы и варианты */
+.task-question {
+  display: flex;
+  align-items: flex-start;
+  margin-bottom: 10px;
+  font-weight: bold;
+  font-size: 17px;          /* чуть больше на 1px для выделения */
+}
+
+.task-question .num {
+  display: inline-block;
+  width: 28px;
+  text-align: left;
+  margin-right: 4px;
+  flex-shrink: 0;
+}
+
+.option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 6px 0;
+  cursor: pointer;
+  font-weight: normal;
+  font-size: 16px;          /* общий размер для вариантов */
+}
+
+.option input {
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  margin: 0;
+}
+
+/* Аудио */
+audio {
+  margin: 6px 0;
+  width: 100%;
+  max-width: 300px;
+
+  /* убираем нативные тени */
+  box-shadow: none !important;
+  outline: none !important;
+}
+
+.audio-locked {
+  color: #999;
+  font-size: 14px;
+  font-style: italic;
+  padding: 4px 0;
+}
+
+/* Текстовые ответы */
+textarea,
+.writing-textarea {
+  line-height: 1.5;
+  width: 100%;
+  padding: 12px;
+  font-size: 16px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  resize: vertical;
+  box-sizing: border-box;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+  transition: border-color 0.2s ease;
+}
+
+textarea:focus,
+.writing-textarea:focus {
+  border-color: #007BFF;
+  outline: none;
+  box-shadow: 0 0 4px rgba(0,123,255,0.4);
+}
+
+/* Кнопки */
+button {
+  display: inline-block;
+  background-color: #4CAF50;
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  margin: 8px 4px;
+  border-radius: 25px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.15);
+}
+
+button:hover {
+  background-color: #45a049;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 10px rgba(0,0,0,0.2);
+}
+
+button:active {
+  transform: translateY(1px);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+/* Кнопка "Назад" */
+#back-button {
+  background-color: #f1f1f1;
+  color: #333;
+  border: 1px solid #ccc;
+}
+
+#back-button:hover {
+  background-color: #ddd;
+  color: #000;
+}
+
+/* Центровка и расположение кнопок */
+.buttons {
+  display: flex;
+  justify-content: center;   /* центрирование по горизонтали */
+  align-items: center;       /* выравнивание по вертикали */
+  flex-wrap: wrap;
+  gap: 15px;                 /* расстояние между кнопками */
+  margin-top: 25px;
+}
+
+.buttons button {
+  min-width: 180px;          /* одинаковая ширина */
+  text-align: center;
+  margin: 0;                 /* убираем старые внешние отступы */
+}
+
+/* Мобильная адаптация */
+@media (max-width: 600px) {
+  body {
+    font-size: 15px;
+  }
+
+  .form-block {
+    padding: 15px 20px;
+  }
+
+  h1, {
+    font-size: 20px;
+    text-align: center;
+  }
+
+  h2 {
+    font-size: 18px;
+    text-align: center;
+  }
+
+  .buttons button {
+    width: 100%;
+    padding: 10px 16px;
+    font-size: 15px;
+  }
+
+  .task-question {
+    font-size: 16px; /* чуть меньше на мобильных */
+  }
+}
+
+.correct-block {
+  background-color: #d4edda; /* зелёный */
+  border-color: #28a745;
+}
+
+.incorrect-block {
+  background-color: #f8d7da; /* красный */
+  border-color: #dc3545;
+}
+
+.level-confirmed {
+  color: #2e7d32; /* зелёный текст итогового результата */
+  font-weight: bold;
+}
+
+.level-not-confirmed {
+  color: #c62828; /* красный текст итогового результата */
+  font-weight: bold;
+}
+
+/* === Индикатор загрузки === */
+.loader-overlay {
+  display: none;
+  position: fixed;
+  z-index: 2000;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(3px);
+  text-align: center;
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
+  color: #333;
+  font-weight: 500;
+  font-size: 16px;
+}
+
+.loader-overlay.active {
+  display: flex;
+}
+
+.loader-spinner {
+  border: 4px solid #f3f3f3;
+  border-top: 4px solid #4CAF50;
+  border-radius: 50%;
+  width: 45px;
+  height: 45px;
+  animation: spin 1s linear infinite;
+  margin-bottom: 10px;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}

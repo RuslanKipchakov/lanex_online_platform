@@ -23,36 +23,42 @@
         <!-- Имя -->
         <label for="applicant_name">Имя *</label>
         <input type="text" id="applicant_name" name="applicant_name" required minlength="2" maxlength="50" />
+        <div class="error-message" id="error_applicant_name"></div>
 
         <!-- Телефон -->
         <label for="phone_number">Номер телефона *</label>
         <input type="tel" id="phone_number" name="phone_number"
-              placeholder="+998 90 123-45-67"
-              required pattern="^\\+998\\s?\\d{2}\\s?\\d{3}-?\\d{2}-?\\d{2}$" />
+              placeholder="+998 90 123 45 67"
+              required />
+        <div class="error-message" id="error_phone_number"></div>
 
         <!-- Возраст -->
         <label for="applicant_age">Возраст *</label>
         <input type="number" id="applicant_age" name="applicant_age" required min="6" max="99" />
+        <div class="error-message" id="error_applicant_age"></div>
 
         <!-- Формат обучения -->
         <fieldset>
           <legend>Формат обучения (можно несколько) *</legend>
-          <label><input type="checkbox" name="preferred_class_format" value="individual" /> Индивидуальный</label>
-          <label><input type="checkbox" name="preferred_class_format" value="pair" /> Парный</label>
-          <label><input type="checkbox" name="preferred_class_format" value="group" /> Групповой</label>
+          <label><input type="checkbox" name="preferred_class_format" value="individual" /> Индивидуально</label>
+          <label><input type="checkbox" name="preferred_class_format" value="pair" /> В паре</label>
+          <label><input type="checkbox" name="preferred_class_format" value="group" /> В группе</label>
         </fieldset>
+        <div class="error-message" id="error_preferred_class_format"></div>
+
 
         <!-- Тип урока -->
         <fieldset>
           <legend>Тип урока (можно несколько) *</legend>
           <label><input type="checkbox" name="preferred_study_mode" value="online" /> Онлайн</label>
-          <label><input type="checkbox" name="preferred_study_mode" value="offline" /> Оффлайн</label>
+          <label><input type="checkbox" name="preferred_study_mode" value="offline" /> В классе</label>
         </fieldset>
+        <div class="error-message" id="error_preferred_study_mode"></div>
 
         <!-- Предполагаемый уровень -->
         <fieldset>
-          <legend>Предполагаемый уровень *</legend>
-          <label><input type="radio" name="level" value="Starter" required /> Starter</label>
+          <legend>Предполагаемый уровень</legend>
+          <label><input type="radio" name="level" value="Starter" /> Starter</label>
           <label><input type="radio" name="level" value="Elementary" /> Elementary</label>
           <label><input type="radio" name="level" value="Pre-Intermediate" /> Pre-Intermediate</label>
           <label><input type="radio" name="level" value="Intermediate" /> Intermediate</label>
@@ -62,7 +68,7 @@
         <!-- Возможное расписание -->
         <fieldset>
           <legend>Возможное расписание *</legend>
-          <p>Отметьте подходящие часы:</p>
+          <div class="error-message" id="error_schedule"></div>
           <div class="schedule-grid">
             <!-- Здесь JS будет генерировать input[name="schedule"] -->
           </div>
@@ -117,6 +123,12 @@
         <button id="okBtn">ОК</button>
       </div>
     </div>
+  </div>
+
+  <!-- Индикатор загрузки -->
+  <div id="loader" class="loader-overlay">
+    <div class="loader-spinner"></div>
+    <p>Отправляем заявку...</p>
   </div>
 
   <!-- JS -->

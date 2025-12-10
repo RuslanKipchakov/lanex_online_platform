@@ -1,23 +1,30 @@
+"""Конфигурация логирования проекта.
+
+Логгер:
+    logger (logging.Logger): Основной логгер проекта.
+
+Особенности:
+    - Уровень логирования: WARNING и выше.
+    - Логи пишутся только в файл.
+    - Ротация: 5 МБ, 3 резервных файла.
+    - Формат: [YYYY-MM-DD HH:MM:SS] LEVEL in NAME: message
+"""
+
 import logging
 import os
-import sys
 from logging.handlers import RotatingFileHandler
 
-# Определяем базовую директорию
+# Настройка директории и файла логов
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 LOG_DIR = os.path.join(BASE_DIR, "logs")
 os.makedirs(LOG_DIR, exist_ok=True)
-
 LOG_FILE = os.path.join(LOG_DIR, "error.log")
 
 # Формат логов
 LOG_FORMAT = "[%(asctime)s] %(levelname)s in %(name)s: %(message)s"
+DATE_FORMAT = "%Y-%m-%d %H:%M:%S"
 
-# Основной логгер
-logger = logging.getLogger("lanex_backend")
-logger.setLevel(logging.INFO)  # INFO — чтобы не пропускать важные записи
-
-# --- Файловый логгер (для локальной отладки) ---
+# Создание обработчика с ротацией
 file_handler = RotatingFileHandler(
     LOG_FILE,
     maxBytes=5_000_000,
@@ -25,24 +32,11 @@ file_handler = RotatingFileHandler(
     encoding="utf-8"
 )
 file_handler.setLevel(logging.WARNING)
-file_handler.setFormatter(logging.Formatter(LOG_FORMAT))
+file_handler.setFormatter(logging.Formatter(LOG_FORMAT, datefmt=DATE_FORMAT))
 
-# --- Консольный логгер (для Railway) ---
-console_handler = logging.StreamHandler(sys.stdout)
-console_handler.setLevel(logging.INFO)
-console_handler.setFormatter(logging.Formatter(LOG_FORMAT))
-
-# --- Определяем среду ---
-# Railway автоматически задаёт переменную RAILWAY_ENVIRONMENT
-is_railway = "RAILWAY_ENVIRONMENT" in os.environ
-
-# --- Добавляем обработчики ---
+# Основной логгер
+logger = logging.getLogger("lanex_backend")
+logger.setLevel(logging.WARNING)
 logger.handlers.clear()
-if is_railway:
-    # На Railway выводим в консоль (stdout)
-    logger.addHandler(console_handler)
-else:
-    # Локально — в файл
-    logger.addHandler(file_handler)
-
+logger.addHandler(file_handler)
 logger.propagate = False

@@ -20,7 +20,7 @@ renderTask3();
 renderTask4();
 
 // Инициализируем движок теста
-initTest("Upper_Intermediate", {
+const state = initTest("Upper-Intermediate", {
   task1: task1Data,
   task2: task2Data,
   task3: task3Data,

@@ -1,6 +1,3 @@
-// =======================
-// ✅ Telegram WebApp Integration (clean version)
-// =======================
 function initializeTelegramWebApp() {
   const tg = window.Telegram?.WebApp;
 
@@ -9,188 +6,239 @@ function initializeTelegramWebApp() {
     return;
   }
 
-  const userFromUnsafe = tg.initDataUnsafe?.user;
-  const userFromInitData = tg.initData?.user;
-  const user = userFromUnsafe || userFromInitData;
+  const user = tg.initDataUnsafe?.user || tg.initData?.user;
 
-  if (user?.id) {
-    setTelegramUserData(user.id);
-
-    // Автоподстановка имени пользователя
-    const usernameInput = document.getElementById('username');
-    if (usernameInput && !usernameInput.value.trim()) {
-      const userName = user.username || user.first_name || `user_${user.id}`;
-      usernameInput.value = userName;
-    }
-  } else {
+  if (!user?.id) {
     createFallbackTelegramField();
+    return;
+  }
+
+  setTelegramUserData(user.id);
+
+  const usernameInput = document.getElementById('username');
+
+  if (usernameInput && !usernameInput.value.trim()) {
+    usernameInput.value =
+      user.username ||
+      user.first_name ||
+      `user_${user.id}`;
   }
 }
 
 function setTelegramUserData(telegramId) {
-  let telegramIdField = document.getElementById('telegram-id');
+  let field = document.getElementById('telegram-id');
 
-  if (!telegramIdField) {
-    telegramIdField = document.createElement('input');
-    telegramIdField.type = 'hidden';
-    telegramIdField.id = 'telegram-id';
-    telegramIdField.name = 'telegram_id';
+  if (!field) {
+    field = document.createElement('input');
+    field.type = 'hidden';
+    field.id = 'telegram-id';
+    field.name = 'telegram_id';
 
     const form = document.getElementById('testForm') || document.querySelector('form');
+
     if (form) {
-      form.appendChild(telegramIdField);
+      form.append(field);
     } else {
-      const submitBtn = document.querySelector('button[type="submit"], #submit-test');
-      if (submitBtn) {
-        submitBtn.parentNode.insertBefore(telegramIdField, submitBtn);
+      const submitButton = document.querySelector('button[type="submit"], #submit-test');
+
+      if (submitButton?.parentNode) {
+        submitButton.parentNode.insertBefore(field, submitButton);
       } else {
-        document.body.appendChild(telegramIdField);
+        document.body.append(field);
       }
     }
   }
 
-  telegramIdField.value = telegramId;
+  field.value = telegramId;
 }
 
 function createFallbackTelegramField() {
-  let telegramIdField = document.getElementById('telegram-id');
-  if (!telegramIdField) {
-    telegramIdField = document.createElement('input');
-    telegramIdField.type = 'hidden';
-    telegramIdField.id = 'telegram-id';
-    telegramIdField.name = 'telegram_id';
-    telegramIdField.value = '';
-    document.body.appendChild(telegramIdField);
-  }
+  if (document.getElementById('telegram-id')) return;
+
+  const field = document.createElement('input');
+  field.type = 'hidden';
+  field.id = 'telegram-id';
+  field.name = 'telegram_id';
+  field.value = '';
+
+  document.body.append(field);
 }
 
-// =======================
-// 🔙 Кнопка "Назад" — простая интеграция
-// =======================
 function initializeBackButton() {
   const tg = window.Telegram?.WebApp;
-  const backBtn = document.getElementById("back-button");
-  if (!backBtn) return;
+  const backBtn = document.getElementById('back-button');
 
-  backBtn.addEventListener("click", (e) => {
+  if (!backBtn || typeof tg?.close !== 'function') return;
+
+  backBtn.addEventListener('click', (e) => {
     e.preventDefault();
-
-    // 🟢 Если открыто внутри Telegram WebApp
-    if (tg && typeof tg.close === "function") {
-      tg.close();
-      return;
-    }
-
-    // 🧩 Если страница открыта в браузере — fallback
-    if (window.history.length > 1) {
-      window.history.back();
-    } else {
-      window.location.href = "../../index.html";
-    }
+    tg.close();
   });
 }
 
-// Инициализация при загрузке DOM
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', () => {
-    initializeTelegramWebApp();
-    initializeBackButton();
-  });
-} else {
+function initPage() {
   initializeTelegramWebApp();
   initializeBackButton();
 }
 
-
-// =======================
-// ⚙️ Основная логика test_engine.js
-// =======================
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initPage);
+} else {
+  initPage();
+}
 
 const DEFAULT_OPTIONS = {
-  endpoint: "/api/check_test",
-  submitButtonIds: ["submit-test", "btn-check", "submit", "check"],
-  resultContainerIds: ["final-message", "final-result", "result"],
+  endpoint: '/api/check_test',
+  submitButtonIds: ['submit-test', 'btn-check', 'submit', 'check'],
+  resultContainerIds: ['final-message', 'final-result', 'result'],
   taskSelector: '[id^="task"]'
 };
 
+function showLoader() {
+  const loader = document.getElementById('loader');
+  if (loader) loader.classList.add('active');
+}
+
+function hideLoader() {
+  const loader = document.getElementById('loader');
+  if (loader) loader.classList.remove('active');
+}
+
 export function initTest(level, taskData = {}, options = {}) {
   const cfg = { ...DEFAULT_OPTIONS, ...options };
-  const state = { level, taskData, cfg, lastPayload: null, lastResult: null };
+
+  const state = {
+    level,
+    taskData,
+    cfg,
+    lastPayload: null,
+    lastResult: null
+  };
+
   attachButtonHandlers(state);
+
   return state;
 }
 
 function collectAnswersFromDOM() {
   const answers = {};
-  const taskBlocks = Array.from(document.querySelectorAll(DEFAULT_OPTIONS.taskSelector));
+  const tasks = Array.from(document.querySelectorAll(DEFAULT_OPTIONS.taskSelector));
 
-  taskBlocks.forEach(task => {
+  tasks.forEach((task) => {
     const taskId = task.id || task.dataset.taskId;
     if (!taskId) return;
+
     answers[taskId] = {};
 
+    // ===== Радио-кнопки =====
     const radios = Array.from(task.querySelectorAll('input[type="radio"]'));
     const radioNames = Array.from(new Set(radios.map(r => r.name).filter(Boolean)));
-    radioNames.forEach(name => {
-      const checked = task.querySelector(`input[type="radio"][name="${escapeCssSelector(name)}"]:checked`);
+
+    radioNames.forEach((name) => {
+      const checked = task.querySelector(
+        `input[type="radio"][name="${escapeCssSelector(name)}"]:checked`
+      );
+
       const qnum = extractQnumFromNameOrElement(name, checked);
-      answers[taskId][String(qnum)] = checked ? checked.value : "";
+      answers[taskId][String(qnum)] = checked ? checked.value : '';
     });
 
+    // ===== Чекбоксы =====
     const checkboxes = Array.from(task.querySelectorAll('input[type="checkbox"]'));
     const checkboxNames = Array.from(new Set(checkboxes.map(c => c.name).filter(Boolean)));
-    checkboxNames.forEach(name => {
-      const checked = Array.from(task.querySelectorAll(`input[type="checkbox"][name="${escapeCssSelector(name)}"]:checked`)).map(i => i.value);
+
+    checkboxNames.forEach((name) => {
+      const checked = Array.from(
+        task.querySelectorAll(
+          `input[type="checkbox"][name="${escapeCssSelector(name)}"]:checked`
+        )
+      ).map(i => i.value);
+
       const qnum = extractQnumFromNameOrElement(name);
       answers[taskId][String(qnum)] = checked;
     });
 
-    const otherSelectors = 'textarea, select, input[type="text"], input[type="number"], input[type="email"], input[type="hidden"], input[type="tel"], input[type="url"]';
+    // ===== Остальные поля =====
+    const otherSelectors = `
+      textarea,
+      select,
+      input[type="text"],
+      input[type="number"],
+      input[type="email"],
+      input[type="hidden"],
+      input[type="tel"],
+      input[type="url"]
+    `;
+
     const otherInputs = Array.from(task.querySelectorAll(otherSelectors));
 
     otherInputs.forEach((el, index) => {
       const qnumAttr = findQnumFromAncestor(el);
-      const qnum = qnumAttr || extractQnumFromNameOrElement(el.name) || (index + 1);
-      answers[taskId][String(qnum)] = (el.value || "").trim();
+      const qnum =
+        qnumAttr ||
+        extractQnumFromNameOrElement(el.name) ||
+        (index + 1);
+
+      answers[taskId][String(qnum)] = (el.value || '').trim();
     });
 
+    // ===== Фолбэк через .question =====
     const questionBlocks = Array.from(task.querySelectorAll('.question'));
-    questionBlocks.forEach((qb, idx) => {
-      const qnum = qb.dataset.qnum || idx + 1;
-      if (!(String(qnum) in answers[taskId])) {
-        const checkedRadio = qb.querySelector('input[type="radio"]:checked');
-        if (checkedRadio) answers[taskId][String(qnum)] = checkedRadio.value;
-        else {
-          const checkedCheckboxes = Array.from(qb.querySelectorAll('input[type="checkbox"]:checked')).map(i => i.value);
-          if (checkedCheckboxes.length) answers[taskId][String(qnum)] = checkedCheckboxes;
-          else {
-            const ta = qb.querySelector('textarea');
-            if (ta) answers[taskId][String(qnum)] = (ta.value || "").trim();
-            else answers[taskId][String(qnum)] = "";
-          }
-        }
+
+    questionBlocks.forEach((qb, index) => {
+      const qnum = qb.dataset.qnum || index + 1;
+
+      if (String(qnum) in answers[taskId]) return;
+
+      const checkedRadio = qb.querySelector('input[type="radio"]:checked');
+      if (checkedRadio) {
+        answers[taskId][String(qnum)] = checkedRadio.value;
+        return;
+      }
+
+      const checkedCheckboxes = Array.from(
+        qb.querySelectorAll('input[type="checkbox"]:checked')
+      ).map(i => i.value);
+
+      if (checkedCheckboxes.length) {
+        answers[taskId][String(qnum)] = checkedCheckboxes;
+        return;
+      }
+
+      const textarea = qb.querySelector('textarea');
+
+      if (textarea) {
+        answers[taskId][String(qnum)] = (textarea.value || '').trim();
+      } else {
+        answers[taskId][String(qnum)] = '';
       }
     });
   });
+
   return answers;
 }
 
 async function postToServer(payload, cfg, timeoutMs = 8000) {
   const controller = new AbortController();
-  const id = setTimeout(() => controller.abort(), timeoutMs);
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
-  const res = await fetch(cfg.endpoint, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    signal: controller.signal,
-    body: JSON.stringify(payload)
-  }).finally(() => clearTimeout(id));
+  try {
+    const response = await fetch(cfg.endpoint, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+      signal: controller.signal
+    });
 
-  if (!res.ok) {
-    const text = await res.text().catch(() => "");
-    throw new Error(`Server returned ${res.status} ${res.statusText} ${text}`);
+    if (!response.ok) {
+      const text = await response.text().catch(() => '');
+      throw new Error(`Server returned ${response.status} ${response.statusText} ${text}`);
+    }
+
+    return response.json();
+  } finally {
+    clearTimeout(timeoutId);
   }
-  return res.json();
 }
 
 function localCheckAnswers(answers, taskData) {
@@ -199,15 +247,15 @@ function localCheckAnswers(answers, taskData) {
 
   for (const [taskId, dataArray] of Object.entries(taskData || {})) {
     if (!Array.isArray(dataArray) || dataArray.length === 0) {
-      result[taskId] = "open";
+      result[taskId] = 'open';
       continue;
     }
 
     const first = dataArray[0];
-    const isClosed = typeof first === "object" && first !== null && ('correct' in first);
+    const isClosed = typeof first === 'object' && first !== null && 'correct' in first;
 
     if (!isClosed) {
-      result[taskId] = "open";
+      result[taskId] = 'open';
       continue;
     }
 
@@ -218,27 +266,24 @@ function localCheckAnswers(answers, taskData) {
     for (let i = 0; i < total; i++) {
       const qnum = String(i + 1);
       const correct = String(dataArray[i].correct).trim();
-      const userAnsForTask = (answers[taskId] && answers[taskId][qnum]) || "";
-      const user = String(userAnsForTask).trim();
-      if (user && user === correct) {
-        taskResult[qnum] = "correct";
+      const userAns = (answers[taskId]?.[qnum] || '').trim();
+
+      if (userAns && userAns === correct) {
+        taskResult[qnum] = 'correct';
         score++;
       } else {
-        taskResult[qnum] = "incorrect";
+        taskResult[qnum] = 'incorrect';
       }
     }
 
-    taskResult["score"] = `${score}/${total}`;
+    taskResult.score = `${score}/${total}`;
     result[taskId] = taskResult;
     totalFractions.push(score / total);
   }
 
-  if (totalFractions.length) {
-    const avg = totalFractions.reduce((a, b) => a + b, 0) / totalFractions.length;
-    result["total"] = `${(avg * 100).toFixed(1)}%`;
-  } else {
-    result["total"] = "0%";
-  }
+  result.total = totalFractions.length
+    ? `${((totalFractions.reduce((a, b) => a + b, 0) / totalFractions.length) * 100).toFixed(1)}%`
+    : '0%';
 
   return result;
 }
@@ -246,35 +291,42 @@ function localCheckAnswers(answers, taskData) {
 function applyResultToPage(result, cfg) {
   const taskBlocks = Array.from(document.querySelectorAll(cfg.taskSelector));
 
-  taskBlocks.forEach(task => {
+  taskBlocks.forEach((task) => {
     const taskId = task.id;
     if (!taskId) return;
 
     const taskRes = result[taskId];
 
-    if (taskRes === "open") {
+    if (taskRes === 'open') {
       replaceTaskWithOpenMessage(task);
       return;
     }
 
-    if (!taskRes || typeof taskRes !== "object") return;
+    if (!taskRes || typeof taskRes !== 'object') return;
 
+    // ===== Проставляем классы для вопросов =====
     const qBlocks = Array.from(task.querySelectorAll('.question'));
+
     qBlocks.forEach((qb, idx) => {
       const qnum = qb.dataset.qnum || String(idx + 1);
       const status = taskRes[String(qnum)];
-      qb.classList.remove("correct-block", "incorrect-block");
-      if (status === "correct") qb.classList.add("correct-block");
-      else if (status === "incorrect") qb.classList.add("incorrect-block");
+
+      qb.classList.remove('correct-block', 'incorrect-block');
+
+      if (status === 'correct') qb.classList.add('correct-block');
+      else if (status === 'incorrect') qb.classList.add('incorrect-block');
     });
 
+    // ===== Проставляем баллы =====
     if (taskRes.score) {
       let scoreNode = task.querySelector('.task-score');
+
       if (!scoreNode) {
         scoreNode = document.createElement('div');
         scoreNode.className = 'task-score';
         task.appendChild(scoreNode);
       }
+
       scoreNode.textContent = `Баллы: ${taskRes.score}`;
     }
   });
@@ -285,24 +337,35 @@ function applyResultToPage(result, cfg) {
 }
 
 function replaceTaskWithOpenMessage(taskBlock) {
-  taskBlock.innerHTML = `
-    <div class="question open-task-message" style="padding:15px;">
-      <p><strong>Это задание проверит преподаватель.</strong></p>
-      <p>Ответы будут проверены вручную; вы получите результат позже.</p>
-    </div>
+  const title = taskBlock.querySelector('h2');
+  taskBlock.innerHTML = '';
+
+  if (title) {
+    taskBlock.appendChild(title);
+  }
+
+  const message = document.createElement('div');
+  message.className = 'question open-task-message';
+  message.style.padding = '15px';
+  message.innerHTML = `
+    <p><strong>Это задание проверит преподаватель.</strong></p>
+    <p>Ответы будут проверены вручную; вы получите результат позже.</p>
   `;
+
+  taskBlock.appendChild(message);
 }
 
 function disableAllInputs() {
-  const all = Array.from(document.querySelectorAll('input, textarea, select'));
-  all.forEach(el => {
+  const inputs = Array.from(document.querySelectorAll('input, textarea, select'));
+
+  inputs.forEach((el) => {
     el.disabled = true;
     el.setAttribute('aria-disabled', 'true');
   });
 }
 
 function displayTotalResult(result, cfg) {
-  const containerId = cfg.resultContainerIds.find(id => document.getElementById(id));
+  let containerId = cfg.resultContainerIds.find((id) => document.getElementById(id));
   let container = containerId ? document.getElementById(containerId) : null;
 
   if (!container) {
@@ -341,19 +404,16 @@ function displayTotalResult(result, cfg) {
 
   container.innerHTML = html;
 
-  // 🟢 Размещаем результат ПЕРЕД кнопкой "Назад", если она есть
+  // ===== Размещаем результат перед кнопкой "Назад", если она есть =====
   const backBtn = document.getElementById('back-button');
-  if (backBtn && backBtn.parentNode) {
+  if (backBtn?.parentNode) {
     backBtn.parentNode.insertBefore(container, backBtn);
   } else {
-    // Если кнопки "Назад" нет — вставляем после блока кнопок
     const buttonsBlock = document.querySelector('.buttons');
-    if (buttonsBlock) {
-      buttonsBlock.insertAdjacentElement('afterend', container);
-    }
+    if (buttonsBlock) buttonsBlock.insertAdjacentElement('afterend', container);
   }
 
-  // 🧩 Делаем кнопку "Отправить" неактивной
+  // ===== Делаем кнопку "Отправить" неактивной =====
   const submitBtn = document.getElementById('submit-test');
   if (submitBtn) {
     submitBtn.disabled = true;
@@ -361,11 +421,8 @@ function displayTotalResult(result, cfg) {
   }
 }
 
-
-
-
 function hideSubmitButton(cfg) {
-  cfg.submitButtonIds.forEach(id => {
+  cfg.submitButtonIds.forEach((id) => {
     const el = document.getElementById(id);
     if (el) el.style.display = 'none';
   });
@@ -373,16 +430,25 @@ function hideSubmitButton(cfg) {
 
 function attachButtonHandlers(state) {
   const cfg = state.cfg;
-
   let submitBtn = null;
+
+  // ===== Ищем кнопку по ID из cfg =====
   for (const id of cfg.submitButtonIds) {
     const el = document.getElementById(id);
-    if (el) { submitBtn = el; break; }
-  }
-  if (!submitBtn) {
-    submitBtn = document.querySelector('.buttons button[type="button"], .buttons button[type="submit"], .buttons button');
+    if (el) {
+      submitBtn = el;
+      break;
+    }
   }
 
+  // ===== Фолбэк: ищем кнопку в блоке .buttons =====
+  if (!submitBtn) {
+    submitBtn = document.querySelector(
+      '.buttons button[type="button"], .buttons button[type="submit"], .buttons button'
+    );
+  }
+
+  // ===== Привязываем обработчик клика =====
   if (submitBtn) {
     submitBtn.addEventListener('click', async (ev) => {
       ev.preventDefault();
@@ -392,15 +458,15 @@ function attachButtonHandlers(state) {
 }
 
 async function onSubmitClicked(state) {
-  const cfg = state.cfg;
-  const level = state.level;
-  const taskData = state.taskData;
+  const { cfg, level, taskData } = state;
+
+  showLoader();
 
   const answers = collectAnswersFromDOM();
-  const usernameInput = document.getElementById("username");
-  const username = usernameInput ? usernameInput.value.trim() : "";
+  const usernameInput = document.getElementById('username');
+  const username = usernameInput ? usernameInput.value.trim() : '';
 
-  const telegramIdInput = document.getElementById("telegram-id");
+  const telegramIdInput = document.getElementById('telegram-id');
   const telegram_id = telegramIdInput ? parseInt(telegramIdInput.value, 10) : null;
 
   state.lastPayload = { username, level, telegram_id, answers };
@@ -410,27 +476,29 @@ async function onSubmitClicked(state) {
     result = await postToServer(state.lastPayload, cfg);
   } catch {
     result = localCheckAnswers(answers, taskData);
-    result = { status: "ok", result };
+    result = { status: 'ok', result };
+  } finally {
+    hideLoader();
   }
 
   state.lastResult = result;
 
   if (!result || !result.status) {
-    alert("Ошибка: сервер не вернул статус. Попробуйте позже.");
+    alert('Ошибка: сервер не вернул статус. Попробуйте позже.');
     return;
   }
 
-  if (result.status === "empty_form") {
+  if (result.status === 'empty_form') {
     showEmptyFormWarning();
     return;
   }
 
-  if (result.status !== "ok") {
+  if (result.status !== 'ok') {
     alert(`Ошибка при обработке теста: ${result.status}`);
     return;
   }
 
-  const oldWarning = document.getElementById("empty-warning");
+  const oldWarning = document.getElementById('empty-warning');
   if (oldWarning) oldWarning.remove();
 
   applyResultToPage(result.result || {}, cfg);
@@ -441,37 +509,42 @@ function escapeCssSelector(s) {
   return s.replace(/([ #.;?+*~\[\]:!^$()=<>|\\/])/g, '\\$1');
 }
 
-function extractQnumFromNameOrElement(nameOrElement, maybeCheckedEl=null) {
-  if (!nameOrElement && maybeCheckedEl) nameOrElement = maybeCheckedEl.name || "";
+function extractQnumFromNameOrElement(nameOrElement, maybeCheckedEl = null) {
+  if (!nameOrElement && maybeCheckedEl) nameOrElement = maybeCheckedEl.name || '';
 
-  if (typeof nameOrElement === "string") {
+  if (typeof nameOrElement === 'string') {
     const matchQ = nameOrElement.match(/q(\d+)/i);
     if (matchQ) return matchQ[1];
+
     const anyDigit = nameOrElement.match(/(\d+)/);
     if (anyDigit) return anyDigit[1];
+
     return nameOrElement;
   }
-  return "";
+
+  return '';
 }
 
 function findQnumFromAncestor(el) {
   let cur = el;
+
   while (cur && cur !== document.body) {
-    if (cur.classList && cur.classList.contains('question')) {
-      if (cur.dataset && cur.dataset.qnum) return cur.dataset.qnum;
+    if (cur.classList?.contains('question') && cur.dataset?.qnum) {
+      return cur.dataset.qnum;
     }
     cur = cur.parentElement;
   }
+
   return null;
 }
 
 function showEmptyFormWarning() {
-  const existing = document.getElementById("empty-warning");
+  const existing = document.getElementById('empty-warning');
   if (existing) existing.remove();
 
-  const msg = document.createElement("div");
-  msg.id = "empty-warning";
-  msg.className = "empty-warning";
+  const msg = document.createElement('div');
+  msg.id = 'empty-warning';
+  msg.className = 'empty-warning';
   msg.innerHTML = `
     <p><strong>⚠️ Ваш тест не был отправлен.</strong></p>
     <p>Вы не заполнили ни одного ответа, поэтому результат не сохраняется.</p>
@@ -481,3 +554,6 @@ function showEmptyFormWarning() {
   const container = document.querySelector('.container') || document.body;
   container.appendChild(msg);
 }
+
+
+

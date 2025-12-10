@@ -9,7 +9,7 @@
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
 
   <!-- Основные стили -->
-  <link rel="stylesheet" href="../../common/css/style.css" />
+  <link rel="stylesheet" href="../../common/css/style_v_3.css" />
 
   <!-- Плеер для аудио -->
   <link rel="stylesheet" href="https://cdn.plyr.io/3.7.8/plyr.css" />
@@ -19,10 +19,12 @@
 <body>
   <div class="container">
 
+    <!-- Логотип -->
     <div class="logo-section">
       <img src="../../common/images/logo_header.png" alt="Lanex Logo" class="logo" />
     </div>
 
+    <!-- Заголовок и дисклеймер -->
     <header>
       <h1>Тест на подтверждение уровня Elementary</h1>
       <p>
@@ -31,6 +33,7 @@
       </p>
     </header>
 
+    <!-- Инструкции -->
     <div class="instructions">
       <h2>Рекомендации перед началом теста:</h2>
       <ul>
@@ -41,60 +44,67 @@
       </ul>
     </div>
 
-    <div id="user-info">
-      <label for="username">Введите ваше имя:</label>
-      <input
-        type="text"
-        id="username"
-        name="username"
-        placeholder="Ваше имя"
-        required
-      />
+    <!-- Форма теста в блоке -->
+    <div class="form-block">
+      <form id="testForm">
+
+        <!-- Имя пользователя -->
+        <div id="user-info">
+          <label for="username">Введите ваше имя:</label>
+          <input type="text" id="username" name="username" placeholder="Ваше имя" required />
+        </div>
+
+        <!-- Скрытые поля -->
+        <input type="hidden" id="access-token" name="token" value="" />
+        <input type="hidden" id="telegram-id" name="telegram_id" value="" />
+
+        <!-- Task 1 -->
+        <div id="task1" class="task">
+          <h2>Task 1: Grammar and Vocabulary</h2>
+          <p class="task-instruction">
+            Выберите один правильный вариант ответа в каждом вопросе (A–D).
+          </p>
+        </div>
+
+        <!-- Task 2 -->
+        <div id="task2" class="task">
+          <h2>Task 2: Listening</h2>
+          <p class="task-instruction">
+            Вам предложено 5 аудиозаписей. <b>Каждую запись можно прослушать только один раз.</b><br />
+            Перед прослушиванием внимательно прочитайте вопросы и варианты ответов, затем прослушайте запись и ответьте.
+          </p>
+        </div>
+
+        <!-- Task 3 -->
+        <div id="task3" class="task">
+          <h2>Task 3: Reading Comprehension</h2>
+          <p class="task-instruction">
+            Прочитайте текст. Ответьте на вопросы 1–10, выбирая один правильный ответ (A–D).
+          </p>
+        </div>
+
+        <!-- Task 4 -->
+        <div id="task4" class="task">
+          <h2>Task 4: Writing</h2>
+        </div>
+
+        <!-- Кнопки управления -->
+        <div class="buttons">
+          <button type="button" id="back-button" class="btn-primary">Назад</button>
+          <button type="button" id="submit-test" class="btn-primary">Отправить ответы</button>
+        </div>
+
+      </form>
     </div>
 
-    <!-- Скрытые поля -->
-    <input type="hidden" id="access-token" name="token" value="" />
-    <input type="hidden" id="telegram-id" name="telegram_id" value="" />
-
-    <form id="testForm">
-      <!-- Task 1 -->
-      <div id="task1">
-        <h2>Task 1: Grammar and Vocabulary</h2>
-        <p class="task-instruction">
-          Выберите один правильный вариант ответа в каждом вопросе (A–D).
-        </p>
-      </div>
-
-      <!-- Task 2 -->
-      <div id="task2">
-        <h2>Task 2: Listening</h2>
-        <p class="task-instruction">
-          Вам предложено 5 аудиозаписей. <b>Каждую запись можно прослушать только один раз.</b><br />
-          Перед прослушиванием внимательно прочитайте вопросы и варианты ответов, затем прослушайте запись и ответьте.
-        </p>
-      </div>
-
-      <!-- Task 3 -->
-      <div id="task3">
-        <h2>Task 3: Reading Comprehension</h2>
-        <p class="task-instruction">
-          Прочитайте текст. Ответьте на вопросы 1–10, выбирая один правильный ответ (A–D).
-        </p>
-      </div>
-
-      <!-- Task 4 -->
-      <div id="task4">
-        <h2>Task 4: Writing</h2>
-      </div>
-
-      <!-- Кнопки управления -->
-      <div class="buttons">
-        <button type="button" id="back-button" class="btn-primary">Назад</button>
-        <button type="button" id="submit-test" class="btn-primary">Отправить ответы</button>
-      </div>
-    </form>
-
+    <!-- Результаты -->
     <div id="result"></div>
+  </div>
+
+  <!-- Индикатор загрузки -->
+  <div id="loader" class="loader-overlay">
+    <div class="loader-spinner"></div>
+    <p>Проверяем ответы...</p>
   </div>
 
   <!-- Подключение движка и рендеров -->
@@ -113,6 +123,6 @@
   <script type="module" src="./js/render_task4.js"></script>
 
   <!-- Главный скрипт -->
-  <script type="module" src="./js/main.js"></script>
+  <script type="module" src="./js/main_v_2.js"></script>
 </body>
 </html>

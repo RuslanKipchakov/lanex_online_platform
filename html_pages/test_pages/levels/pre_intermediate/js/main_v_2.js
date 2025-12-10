@@ -20,7 +20,7 @@ renderTask3();
 renderTask4();
 
 // Запускаем движок
-initTest("Pre_Intermediate", {
+const state = initTest("Pre-Intermediate", {
   task1: task1Data,
   task2: task2Data,
   task3: task3Data,

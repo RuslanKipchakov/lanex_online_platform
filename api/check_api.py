@@ -1,179 +1,163 @@
-from fastapi import APIRouter, HTTPException, Request
+import os
+import re
+from typing import Dict, Any, Optional
+
+from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel
-from typing import Dict, Any
-from utilities.check_function import check_test_results
-from utilities.pdf_generation import generate_test_report
-from utilities.dropbox_utils import upload_to_dropbox  # 🆕
-from database.base import AsyncSessionLocal
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from database.base import get_db
 from database.crud.user_session import read_user_session
 from database.crud.test_result import create_test_result
-from database.models import LevelEnum
-import re
-import logging
-import os
-
+from utilities.check_function import check_test_results
+from utilities.pdf_generation import generate_test_report
+from utilities.dropbox_utils import get_dropbox_client, get_or_create_user_dropbox_folder, upload_to_dropbox
 from logging_config import logger
+
 
 router = APIRouter(prefix="/api")
 
 
-class SubmissionModel(BaseModel):
+class TestSubmissionSchema(BaseModel):
+    """
+    Схема данных для отправки результатов теста пользователем.
+
+    Attributes:
+        level: Уровень теста.
+        username: Имя пользователя (необязательно).
+        telegram_id: Telegram ID пользователя.
+        answers: Словарь с ответами по задачам и вопросам.
+    """
     level: str
-    username: str | None = None
+    username: Optional[str] = None
     telegram_id: int
     answers: Dict[str, Dict[str, Any]]
 
 
 @router.post("/check_test")
-async def check_test(submission: SubmissionModel, request: Request):
-    logger.info("📥 Получен запрос /check_test")
+async def check_test_endpoint(
+    payload: TestSubmissionSchema,
+    session: AsyncSession = Depends(get_db)
+) -> dict:
+    """
+    Проверяет ответы пользователя на тест, формирует PDF отчёт, загружает его в Dropbox
+    и сохраняет результат в базе данных.
 
-    data = submission.dict()
-    username = (data.get("username") or "").strip()
-    level_str = data.get("level")
-    answers = data.get("answers") or {}
-    telegram_id = data.get("telegram_id")
+    Args:
+        payload: Данные с ответами тестируемого.
+        session: Асинхронная сессия БД.
+
+    Returns:
+        dict: Статус проверки, имя пользователя, путь в Dropbox и детальный результат.
+
+    Raises:
+        HTTPException: При ошибках обработки или сохранения данных.
+    """
+    telegram_id = payload.telegram_id
+    level = payload.level
+    username = (payload.username or "").strip()
+    answers = payload.answers or {}
 
     try:
-        # 1️⃣ Проверка, что форма не пуста
-        has_any_answer = any(
+        # === 1. Проверка, что есть ответы ===
+        if not any(
             (isinstance(v, list) and v) or (isinstance(v, str) and v.strip())
             for task in answers.values()
             for v in task.values()
-        )
-        if not has_any_answer:
+        ):
             logger.warning(f"Пустая форма от пользователя {telegram_id}")
             return {"status": "empty_form"}
 
-        # 2️⃣ Определение имени пользователя
-        safe_name = re.sub(r"[^a-zA-Zа-яА-Я0-9_\-\s]", "", username)
-        if not safe_name.strip():
-            async with AsyncSessionLocal() as session:
-                user_session = await read_user_session(session, telegram_id)
+        # === 2. Безопасное имя пользователя ===
+        safe_name = re.sub(r"[^a-zA-Zа-яА-Я0-9_\-\s]", "", username).strip()
+        if not safe_name:
+            user_session = await read_user_session(session, telegram_id)
+            safe_name = user_session.telegram_username if user_session and user_session.telegram_username else f"user_{telegram_id}"
 
-            if user_session and user_session.telegram_username:
-                safe_name = user_session.telegram_username
-            else:
-                safe_name = f"user_{telegram_id}"
+        # === 3. Проверка теста и вычисление результатов ===
+        check_result = await check_test_results({
+            "level": level,
+            "answers": answers,
+            "username": safe_name
+        })
 
-        logger.info(f"Пользователь: {safe_name}, уровень: {level_str}")
-
-        # 3️⃣ Приводим уровень к Enum
-        try:
-            level = LevelEnum(level_str)
-        except ValueError:
-            logger.error(f"❌ Некорректный уровень: {level_str}")
-            raise HTTPException(status_code=400, detail=f"Invalid level: {level_str}")
-
-        # 4️⃣ Проверяем тест
-        try:
-            check_result = await check_test_results({**data, "username": safe_name})
-        except Exception as e:
-            logger.exception("Ошибка при проверке теста")
-            raise HTTPException(status_code=500, detail=f"Internal check error: {e}")
-
-        # 5️⃣ Формируем результат
-        closed_answers = {}
-        open_answers = {}
-        score = {}
-
+        # === 4. Формирование структуры закрытых/открытых ответов и баллов ===
+        closed_answers, open_answers, score = {}, {}, {}
         for task, content in answers.items():
-            task_key = f"task_{task[-1]}" if not task.startswith("task_") else task
+            task_key = task if task.startswith("task_") else f"task_{task[-1]}"
             task_result = check_result.get(task, {})
 
             if task_result == "open":
                 open_answers[task_key] = content
                 continue
 
-            closed_answers[task_key] = {}
-            for q_num, user_answer in content.items():
-                status = task_result.get(q_num, "unchecked")
-                closed_answers[task_key][f"Q{q_num}"] = {
-                    "answer": user_answer,
-                    "status": status
-                }
+            closed_answers[task_key] = {
+                f"Q{q_num}": {"answer": user_answer, "status": task_result.get(q_num, "unchecked")}
+                for q_num, user_answer in content.items()
+            }
 
             score_str = task_result.get("score")
             if score_str:
                 try:
-                    score_val = int(score_str.split("/")[0])
-                    score[task_key] = score_val
+                    score[task_key] = int(score_str.split("/")[0])
                 except Exception:
-                    pass
+                    logger.warning(f"Невозможно преобразовать балл в int для {task_key}")
 
-        # Добавляем total score, если есть
         if "total" in check_result:
             try:
-                score["total"] = int(check_result["total"])
+                score["total"] = float(check_result["total"].strip("%"))
             except Exception:
-                pass
+                logger.warning(f"Невозможно преобразовать общий балл в float")
 
-        # 6️⃣ Генерируем PDF отчёт
+        # === 5. Генерация PDF отчёта ===
+        pdf_path = generate_test_report(
+            test_taker=safe_name,
+            level=level,
+            closed_answers=closed_answers,
+            open_answers=open_answers or None,
+            score=score,
+            output_dir="test-reports",
+        )
+
+        # === 6. Работа с Dropbox ===
+        dbx = get_dropbox_client()
+        user_folder_path = await get_or_create_user_dropbox_folder(dbx, telegram_id)
+
+        upload_result = upload_to_dropbox(
+            local_path=pdf_path,
+            username=safe_name,
+            file_type="test-report",
+            level=level,
+            user_folder_path=user_folder_path
+        )
+
+        # === 7. Удаление временного PDF с сервера ===
         try:
-            output_dir = "/tmp/reports"  # временная папка для Railway
-            os.makedirs(output_dir, exist_ok=True)
-
-            pdf_path = generate_test_report(
-                test_taker=safe_name,
-                level=level.value,
-                closed_answers=closed_answers,
-                open_answers=open_answers or None,
-                score=score,
-                output_dir=output_dir,
-            )
-
-            logger.info(f"📄 PDF отчёт успешно создан: {pdf_path}")
-
+            os.remove(pdf_path)
         except Exception as e:
-            logger.exception("❌ Ошибка при генерации PDF")
-            pdf_path = None
+            logger.warning(f"Не удалось удалить временный PDF: {e}")
 
-        # 7️⃣ Загружаем PDF в Dropbox
-        dropbox_path = None
-        if pdf_path and os.path.exists(pdf_path):
-            try:
-                dropbox_path = upload_to_dropbox(
-                    local_path=pdf_path,
-                    telegram_id=telegram_id,
-                    username=safe_name,
-                    file_type="test-report",
-                    level=level.value,
-                )
-                logger.info(f"☁️ Файл загружен в Dropbox: {dropbox_path}")
-            except Exception as e:
-                logger.exception("⚠️ Ошибка при загрузке в Dropbox")
-                dropbox_path = "upload_failed"
+        # === 8. Сохранение результата в БД ===
+        await create_test_result(
+            session=session,
+            user_id=telegram_id,
+            test_taker=safe_name,
+            level=level,
+            closed_answers=closed_answers,
+            open_answers=open_answers or None,
+            score=score,
+            dropbox_file_id=upload_result["dropbox_file_id"],
+            file_name=upload_result["file_name"],
+        )
 
-        # 8️⃣ Сохраняем результат в БД
-        async with AsyncSessionLocal() as session:
-            try:
-                await create_test_result(
-                    session=session,
-                    user_id=telegram_id,
-                    test_taker=safe_name,
-                    level=level,
-                    closed_answers=closed_answers,
-                    open_answers=open_answers or None,
-                    score=score,
-                    pdf_path=dropbox_path or pdf_path or "no_pdf",
-                )
-                logger.info(f"✅ Результат теста сохранён для {safe_name} ({telegram_id})")
-            except ValueError as e:
-                logger.warning(f"⚠️ Ошибка при сохранении в БД: {e}")
-                raise HTTPException(status_code=400, detail=str(e))
-            except Exception as e:
-                logger.exception("❌ Ошибка при работе с базой данных")
-                raise HTTPException(status_code=500, detail=f"DB error: {e}")
-
+        # === 9. Ответ клиенту ===
         return {
             "status": "ok",
             "username_used": safe_name,
-            "dropbox_path": dropbox_path,
-            "result": check_result,
+            "dropbox_path": upload_result["dropbox_path"],
+            "result": check_result
         }
 
-    except HTTPException:
-        raise
     except Exception as e:
-        logger.exception(f"Необработанная ошибка в /check_test: {e}")
-        raise HTTPException(status_code=500, detail=f"Unexpected server error: {e}")
+        logger.exception(f"❌ Ошибка при обработке теста пользователя {telegram_id}: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
