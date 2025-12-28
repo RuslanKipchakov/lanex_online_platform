@@ -30,7 +30,7 @@ def run_migrations_offline():
         url=settings.db_url,
         target_metadata=target_metadata,
         literal_binds=True,
-        compare_type=True
+        compare_type=True,
     )
 
     with context.begin_transaction():
@@ -56,7 +56,7 @@ def do_run_migrations(connection: Connection):
         connection=connection,
         target_metadata=target_metadata,
         compare_type=True,
-        render_as_batch=True
+        render_as_batch=True,
     )
 
     with context.begin_transaction():

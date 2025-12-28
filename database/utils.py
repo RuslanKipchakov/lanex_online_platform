@@ -10,10 +10,11 @@
 """
 
 import asyncio
+
 from sqlalchemy import text
 
-from .base import engine, AsyncSessionLocal, Base
 from . import models  # noqa: F401  (важно, чтобы модели были импортированы)
+from .base import AsyncSessionLocal, Base, engine
 
 
 async def test_async_db() -> None:
@@ -24,7 +25,7 @@ async def test_async_db() -> None:
     """
     async with AsyncSessionLocal() as session:
         result = await session.execute(text("SELECT 1"))
-        connected = (result.scalar() == 1)
+        connected = result.scalar() == 1
 
         if connected:
             print("🟢 Асинхронное соединение с БД установлено.")

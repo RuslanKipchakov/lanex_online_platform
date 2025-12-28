@@ -10,6 +10,7 @@
 
 from functools import lru_cache
 from typing import List, Union
+
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -55,16 +56,14 @@ class Settings(BaseSettings):
         )
 
     model_config = SettingsConfigDict(
-        case_sensitive=False,
-        env_file=".env",
-        env_file_encoding="utf-8"
+        case_sensitive=False, env_file=".env", env_file_encoding="utf-8"
     )
 
 
 @lru_cache()
 def get_settings() -> Settings:
     """Возвращает кэшированный экземпляр Settings."""
-    return Settings()
+    return Settings()     # pyright: ignore[reportCallIssue]
 
 
 settings = get_settings()
@@ -72,7 +71,5 @@ settings = get_settings()
 # ---- НОРМАЛИЗАЦИЯ CORS ----
 if isinstance(settings.cors_origins, str):
     settings.cors_origins = [
-        origin.strip()
-        for origin in settings.cors_origins.split(",")
-        if origin.strip()
+        origin.strip() for origin in settings.cors_origins.split(",") if origin.strip()
     ]

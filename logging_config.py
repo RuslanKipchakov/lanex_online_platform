@@ -26,10 +26,7 @@ DATE_FORMAT = "%Y-%m-%d %H:%M:%S"
 
 # Создание обработчика с ротацией
 file_handler = RotatingFileHandler(
-    LOG_FILE,
-    maxBytes=5_000_000,
-    backupCount=3,
-    encoding="utf-8"
+    LOG_FILE, maxBytes=5_000_000, backupCount=3, encoding="utf-8"
 )
 file_handler.setLevel(logging.WARNING)
 file_handler.setFormatter(logging.Formatter(LOG_FORMAT, datefmt=DATE_FORMAT))

@@ -31,7 +31,9 @@ async def send_pdf_to_admin(file_path: str, caption: Optional[str] = None) -> No
     admin_id = settings.admin_telegram_id
 
     if not bot_token or not admin_id:
-        logger.error("❌ TELEGRAM_BOT_TOKEN или ADMIN_TELEGRAM_ID не указаны в настройках.")
+        logger.error(
+            "❌ TELEGRAM_BOT_TOKEN или ADMIN_TELEGRAM_ID не указаны в настройках."
+        )
         return
 
     caption = caption or "Новая заявка получена 📄"
@@ -49,7 +51,8 @@ async def send_pdf_to_admin(file_path: str, caption: Optional[str] = None) -> No
                     if response.status != 200:
                         text = await response.text()
                         logger.error(
-                            f"❌ Ошибка при отправке PDF админу: {response.status} — {text}"
+                            f"❌ Ошибка при отправке PDF админу: "
+                            f"{response.status} — {text}"
                         )
     except Exception as e:
         logger.exception(f"❌ Исключение при отправке PDF админу: {e}")

@@ -1,5 +1,5 @@
 import os
-from typing import List, Optional, Dict, Any
+from typing import Any, Dict, List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Path
 from pydantic import BaseModel
@@ -8,21 +8,20 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from database.base import get_db
 from database.crud.application import (
     create_application,
-    read_application_by_user_id,
     read_application_by_id,
+    read_application_by_user_id,
     update_application_by_id,
 )
 from database.crud.user_session import append_application_id
-from utilities.pdf_generation import generate_application_pdf
-from utilities.dropbox_utils import (
-    upload_to_dropbox,
-    get_dropbox_client,
-    get_or_create_user_dropbox_folder
-)
-from utilities.telegram_notifications import send_pdf_to_admin
-from utilities.phone_utils import normalize_phone
 from logging_config import logger
-
+from utilities.dropbox_utils import (
+    get_dropbox_client,
+    get_or_create_user_dropbox_folder,
+    upload_to_dropbox,
+)
+from utilities.pdf_generation import generate_application_pdf
+from utilities.phone_utils import normalize_phone
+from utilities.telegram_notifications import send_pdf_to_admin
 
 router = APIRouter(prefix="/api")
 
@@ -45,6 +44,7 @@ class ApplicationSchema(BaseModel):
         previous_experience: Предыдущий опыт.
         telegram_id: Telegram ID пользователя.
     """
+
     applicant_name: str
     phone_number: str
     applicant_age: int
@@ -64,11 +64,11 @@ class ApplicationSchema(BaseModel):
 
 @router.post("/applications")
 async def create_application_endpoint(
-    payload: ApplicationSchema,
-    session: AsyncSession = Depends(get_db)
+    payload: ApplicationSchema, session: AsyncSession = Depends(get_db)
 ) -> dict:
     """
-    Создаёт новую заявку: PDF на сервере, загрузка в Dropbox, уведомление админа и сохранение в БД.
+    Создаёт новую заявку: PDF на сервере, загрузка в Dropbox,
+    уведомление админа и сохранение в БД.
 
     Args:
         payload: Данные заявки.
@@ -100,14 +100,16 @@ async def create_application_endpoint(
 
         # === 2. Получение/создание папки пользователя в Dropbox ===
         dbx = get_dropbox_client()
-        user_folder_path = await get_or_create_user_dropbox_folder(dbx, payload.telegram_id)
+        user_folder_path = await get_or_create_user_dropbox_folder(
+            dbx, payload.telegram_id
+        )
 
         # === 3. Загрузка PDF в Dropbox ===
         upload_result = upload_to_dropbox(
             local_path=pdf_path,
             username=payload.applicant_name,
             file_type="application",
-            user_folder_path=user_folder_path
+            user_folder_path=user_folder_path,
         )
 
         # === 4. Уведомление админа ===
@@ -154,13 +156,13 @@ async def create_application_endpoint(
 
     except Exception as e:
         logger.exception(f"❌ Ошибка при создании заявки: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @router.get("/applications/user/{telegram_id}")
 async def get_applications_by_user(
     telegram_id: int = Path(..., description="Telegram ID пользователя"),
-    session: AsyncSession = Depends(get_db)
+    session: AsyncSession = Depends(get_db),
 ) -> list[dict]:
     """
     Возвращает все заявки пользователя.
@@ -177,7 +179,11 @@ async def get_applications_by_user(
         {
             "id": app.id,
             "name": app.applicant_name,
-            "date": app.created_at.strftime("%Y-%m-%d") if hasattr(app, "created_at") else "—",
+            "date": (
+                app.created_at.strftime("%Y-%m-%d")
+                if hasattr(app, "created_at")
+                else "—"
+            ),
         }
         for app in apps
     ]
@@ -185,8 +191,7 @@ async def get_applications_by_user(
 
 @router.get("/applications/{id}")
 async def get_application_by_id(
-    id: int,
-    session: AsyncSession = Depends(get_db)
+    id: int, session: AsyncSession = Depends(get_db)
 ) -> dict:
     """
     Возвращает заявку по её ID.
@@ -214,19 +219,23 @@ async def get_application_by_id(
         "preferred_study_mode": app.preferred_study_mode,
         "level": app.level.value if app.level else None,
         "possible_scheduling": app.possible_scheduling,
-        "reference_source": app.reference_source.value if app.reference_source else None,
+        "reference_source": (
+            app.reference_source.value if app.reference_source else None
+        ),
         "need_ielts": app.need_ielts,
         "studied_at_lanex": app.studied_at_lanex,
-        "previous_experience": [v.value for v in app.previous_experience] if app.previous_experience else None,
+        "previous_experience": (
+            [v.value for v in app.previous_experience]
+            if app.previous_experience
+            else None
+        ),
         "telegram_id": app.user_id,
     }
 
 
 @router.put("/applications/{id}")
 async def update_application_endpoint(
-    id: int,
-    payload: ApplicationSchema,
-    session: AsyncSession = Depends(get_db)
+    id: int, payload: ApplicationSchema, session: AsyncSession = Depends(get_db)
 ) -> dict:
     """
     Обновляет существующую заявку: генерация PDF, Dropbox, уведомление админа и БД.
@@ -270,7 +279,9 @@ async def update_application_endpoint(
 
         # === 2. Dropbox ===
         dbx = get_dropbox_client()
-        user_folder_path = await get_or_create_user_dropbox_folder(dbx, payload.telegram_id)
+        user_folder_path = await get_or_create_user_dropbox_folder(
+            dbx, payload.telegram_id
+        )
 
         upload_result = upload_to_dropbox(
             local_path=pdf_path,
@@ -311,8 +322,11 @@ async def update_application_endpoint(
             file_name=upload_result["file_name"],
         )
 
-        return {"message": "Application updated successfully", "dropbox_path": upload_result["dropbox_path"]}
+        return {
+            "message": "Application updated successfully",
+            "dropbox_path": upload_result["dropbox_path"],
+        }
 
     except Exception as e:
         logger.exception(f"❌ Ошибка при обновлении заявки: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e

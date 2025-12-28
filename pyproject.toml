@@ -3,7 +3,6 @@ name = "lanex-online-platform"
 version = "0.1.0"
 description = "Lanex Online Platform"
 authors = ["Ruslan Kipchakov <your_email@example.com>"]
-package-mode = false
 
 [tool.poetry.dependencies]
 python = "^3.10"
@@ -20,7 +19,35 @@ alembic = "^1.17.2"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.4.2"
+ruff = "^0.14.8"
+black = "^25.12.0"
+pyright = "^1.1.407"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
 build-backend = "poetry.core.masonry.api"
+
+[tool.black]
+line-length = 88
+target-version = ["py310"]
+
+[tool.ruff]
+line-length = 88
+target-version = "py310"
+exclude = ["alembic"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["lanex_online_platform"]
+
+[tool.pyright]
+pythonVersion = "3.10"
+typeCheckingMode = "basic"
+useLibraryCodeForTypes = true
+exclude = ["alembic"]
+
+[tool.ruff.lint.per-file-ignores]
+"alembic/env.py" = ["E402", "I001"]
+"api/*.py" = ["B008"]

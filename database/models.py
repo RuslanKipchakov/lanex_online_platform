@@ -16,18 +16,18 @@ from datetime import datetime, timezone
 from enum import Enum
 
 from sqlalchemy import (
+    JSON,
+    BigInteger,
+    Boolean,
+    CheckConstraint,
+    DateTime,
     ForeignKey,
     Integer,
     String,
-    CheckConstraint,
-    JSON,
-    Boolean,
-    DateTime,
-    BigInteger,
 )
 from sqlalchemy import Enum as SqlEnum
-from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy.dialects.postgresql import ARRAY as PG_ARRAY
+from sqlalchemy.orm import Mapped, mapped_column
 
 from .base import Base
 
@@ -44,8 +44,10 @@ PHONE_NUMBER_LENGTH = 20
 # ENUM типы
 # =============================================================================
 
+
 class PreferredClassFormatEnum(str, Enum):
     """Формат занятий, выбранный пользователем."""
+
     individual = "individual"
     pair = "pair"
     group = "group"
@@ -53,12 +55,14 @@ class PreferredClassFormatEnum(str, Enum):
 
 class PreferredStudyModeEnum(str, Enum):
     """Формат обучения."""
+
     online = "online"
     offline = "offline"
 
 
 class LevelEnum(str, Enum):
     """Уровни владения английским языком."""
+
     starter = "Starter"
     elementary = "Elementary"
     pre_intermediate = "Pre-Intermediate"
@@ -69,6 +73,7 @@ class LevelEnum(str, Enum):
 
 class ReferenceSourceEnum(str, Enum):
     """Источник, откуда пользователь узнал о школе."""
+
     friends = "friends"
     internet = "internet"
     telegram = "telegram"
@@ -77,6 +82,7 @@ class ReferenceSourceEnum(str, Enum):
 
 class PreviousExperienceEnum(str, Enum):
     """Опыт изучения английского языка."""
+
     never = "never"
     school = "school"
     university = "university"
@@ -87,6 +93,7 @@ class PreviousExperienceEnum(str, Enum):
 # =============================================================================
 # Модель сессии пользователя
 # =============================================================================
+
 
 class UserSession(Base):
     """
@@ -106,27 +113,24 @@ class UserSession(Base):
     telegram_username: Mapped[str | None] = mapped_column(nullable=True)
 
     application_ids: Mapped[list[int] | None] = mapped_column(
-        PG_ARRAY(Integer),
-        nullable=True,
-        comment="Список ID заявок пользователя."
+        PG_ARRAY(Integer), nullable=True, comment="Список ID заявок пользователя."
     )
 
     started_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         nullable=False,
-        default=lambda: datetime.now(timezone.utc)
+        default=lambda: datetime.now(timezone.utc),
     )
 
     dropbox_folder_id: Mapped[str | None] = mapped_column(
-        String(),
-        nullable=True,
-        comment="Персональная Dropbox-папка пользователя."
+        String(), nullable=True, comment="Персональная Dropbox-папка пользователя."
     )
 
 
 # =============================================================================
 # Модель заявки
 # =============================================================================
+
 
 class Application(Base):
     """
@@ -166,82 +170,88 @@ class Application(Base):
     )
 
     applicant_name: Mapped[str] = mapped_column(
-        String(MAX_APPLICANT_NAME_LENGTH),
-        nullable=False
+        String(MAX_APPLICANT_NAME_LENGTH), nullable=False
     )
 
     phone_number: Mapped[str] = mapped_column(
-        String(PHONE_NUMBER_LENGTH),
-        nullable=False
+        String(PHONE_NUMBER_LENGTH), nullable=False
     )
 
     applicant_age: Mapped[int] = mapped_column(
-        Integer,
-        CheckConstraint("applicant_age BETWEEN 1 AND 99"),
-        nullable=False
+        Integer, CheckConstraint("applicant_age BETWEEN 1 AND 99"), nullable=False
     )
 
     preferred_class_format: Mapped[list[PreferredClassFormatEnum]] = mapped_column(
-        PG_ARRAY(SqlEnum(PreferredClassFormatEnum, name="preferred_class_format_enum", native_enum=False)),
-        nullable=False
+        PG_ARRAY(
+            SqlEnum(
+                PreferredClassFormatEnum,
+                name="preferred_class_format_enum",
+                native_enum=False,
+            )
+        ),
+        nullable=False,
     )
 
     preferred_study_mode: Mapped[list[PreferredStudyModeEnum]] = mapped_column(
-        PG_ARRAY(SqlEnum(PreferredStudyModeEnum, name="preferred_study_mode_enum", native_enum=False)),
-        nullable=False
+        PG_ARRAY(
+            SqlEnum(
+                PreferredStudyModeEnum,
+                name="preferred_study_mode_enum",
+                native_enum=False,
+            )
+        ),
+        nullable=False,
     )
 
     level: Mapped[LevelEnum | None] = mapped_column(
-        SqlEnum(LevelEnum, name="level_enum", native_enum=False),
-        nullable=True
+        SqlEnum(LevelEnum, name="level_enum", native_enum=False), nullable=True
     )
 
     possible_scheduling: Mapped[list[dict[str, object]]] = mapped_column(
-        JSON,
-        nullable=False,
-        comment='Например: [{"day": "Monday", "times": ["Any"]}]'
+        JSON, nullable=False, comment='Например: [{"day": "Monday", "times": ["Any"]}]'
     )
 
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         nullable=False,
-        default=lambda: datetime.now(timezone.utc)
+        default=lambda: datetime.now(timezone.utc),
     )
 
     dropbox_file_id: Mapped[str] = mapped_column(
-        String(),
-        nullable=False,
-        comment="Уникальный Dropbox file_id PDF-файла заявки."
+        String(), nullable=False, comment="Уникальный Dropbox file_id PDF-файла заявки."
     )
 
     file_name: Mapped[str] = mapped_column(
-        String(),
-        nullable=False,
-        comment="Имя PDF-файла заявки, сохраняемое в Dropbox."
+        String(), nullable=False, comment="Имя PDF-файла заявки, сохраняемое в Dropbox."
     )
 
     reference_source: Mapped[ReferenceSourceEnum | None] = mapped_column(
         SqlEnum(ReferenceSourceEnum, name="reference_source_enum", native_enum=False),
-        nullable=True
+        nullable=True,
     )
 
     need_ielts: Mapped[bool | None] = mapped_column(Boolean(), nullable=True)
 
     studied_at_lanex: Mapped[bool] = mapped_column(
-        Boolean(),
-        nullable=False,
-        default=False
+        Boolean(), nullable=False, default=False
     )
 
     previous_experience: Mapped[list[PreviousExperienceEnum] | None] = mapped_column(
-        PG_ARRAY(SqlEnum(PreviousExperienceEnum, name="previous_experience_enum", native_enum=False)),
-        nullable=True
+        PG_ARRAY(
+            SqlEnum(
+                PreviousExperienceEnum,
+                name="previous_experience_enum",
+                native_enum=False,
+            )
+        ),
+        nullable=True,
     )
 
 
 # =============================================================================
 # Модель результата теста
 # =============================================================================
+
 
 class TestResult(Base):
     """
@@ -268,53 +278,43 @@ class TestResult(Base):
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
 
     user_id: Mapped[int] = mapped_column(
-        BigInteger, ForeignKey("user_sessions.telegram_id"),
-        nullable=False
+        BigInteger, ForeignKey("user_sessions.telegram_id"), nullable=False
     )
 
     test_taker: Mapped[str | None] = mapped_column(
-        String(MAX_APPLICANT_NAME_LENGTH),
-        nullable=True,
-        comment="Имя участника теста."
+        String(MAX_APPLICANT_NAME_LENGTH), nullable=True, comment="Имя участника теста."
     )
 
     level: Mapped[LevelEnum] = mapped_column(
-        SqlEnum(LevelEnum, name="level_enum", native_enum=False),
-        nullable=False
+        SqlEnum(LevelEnum, name="level_enum", native_enum=False), nullable=False
     )
 
     closed_answers: Mapped[dict | None] = mapped_column(
         JSON,
         nullable=True,
-        comment='{"task_1": {"Q1": {"answer": "A", "status": "correct"}}}'
+        comment='{"task_1": {"Q1": {"answer": "A", "status": "correct"}}}',
     )
 
     open_answers: Mapped[dict | None] = mapped_column(
-        JSON,
-        nullable=True,
-        comment='{"Q5": "текст ответа"}'
+        JSON, nullable=True, comment='{"Q5": "текст ответа"}'
     )
 
     score: Mapped[dict | None] = mapped_column(
-        JSON,
-        nullable=True,
-        comment='{"task_1": 7, "task_2": 4}'
+        JSON, nullable=True, comment='{"task_1": 7, "task_2": 4}'
     )
 
     dropbox_file_id: Mapped[str] = mapped_column(
         String(),
         nullable=False,
-        comment="Уникальный Dropbox file_id PDF результата теста."
+        comment="Уникальный Dropbox file_id PDF результата теста.",
     )
 
     file_name: Mapped[str] = mapped_column(
-        String(),
-        nullable=False,
-        comment="Имя PDF-файла результата теста."
+        String(), nullable=False, comment="Имя PDF-файла результата теста."
     )
 
     submitted_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         nullable=False,
-        default=lambda: datetime.now(timezone.utc)
+        default=lambda: datetime.now(timezone.utc),
     )

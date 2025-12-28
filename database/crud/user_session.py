@@ -15,19 +15,17 @@ CRUD-операции для работы с моделью UserSession.
 
 from typing import Optional
 
+from fastapi import HTTPException
 from sqlalchemy import select
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
-from fastapi import HTTPException
 
-from logging_config import logger
 from database.models import UserSession
+from logging_config import logger
 
 
 async def create_user_session(
-    session: AsyncSession,
-    telegram_id: int,
-    telegram_username: Optional[str] = None
+    session: AsyncSession, telegram_id: int, telegram_username: Optional[str] = None
 ) -> None:
     """
     Создаёт новую пользовательскую сессию, если она ещё не существует.
@@ -45,8 +43,7 @@ async def create_user_session(
 
         if not user_session:
             new_user_session = UserSession(
-                telegram_id=telegram_id,
-                telegram_username=telegram_username
+                telegram_id=telegram_id, telegram_username=telegram_username
             )
             session.add(new_user_session)
 
@@ -57,8 +54,7 @@ async def create_user_session(
 
 
 async def read_user_session(
-    session: AsyncSession,
-    telegram_id: int
+    session: AsyncSession, telegram_id: int
 ) -> Optional[UserSession]:
     """
     Возвращает объект UserSession по Telegram ID.
@@ -84,9 +80,7 @@ async def read_user_session(
 
 
 async def append_application_id(
-    session: AsyncSession,
-    telegram_id: int,
-    application_id: int
+    session: AsyncSession, telegram_id: int, application_id: int
 ) -> None:
     """
     Добавляет ID заявки в список application_ids пользователя.
@@ -113,8 +107,7 @@ async def append_application_id(
 
         await session.commit()
         logger.info(
-            "🟢 Добавлен application_id=%s пользователю %s",
-            application_id, telegram_id
+            "🟢 Добавлен application_id=%s пользователю %s", application_id, telegram_id
         )
     except SQLAlchemyError as e:
         logger.error("❌ Ошибка БД в append_application_id: %s", e)
@@ -122,9 +115,7 @@ async def append_application_id(
 
 
 async def update_dropbox_folder_id(
-    session: AsyncSession,
-    telegram_id: int,
-    folder_id: str
+    session: AsyncSession, telegram_id: int, folder_id: str
 ) -> None:
     """
     Сохраняет или обновляет Dropbox folder_id для пользователя.
@@ -148,7 +139,8 @@ async def update_dropbox_folder_id(
 
         logger.info(
             "🟢 Dropbox folder_id сохранён для пользователя %s: %s",
-            telegram_id, folder_id
+            telegram_id,
+            folder_id,
         )
     except SQLAlchemyError as e:
         logger.error("❌ Ошибка БД в update_dropbox_folder_id: %s", e)

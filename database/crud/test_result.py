@@ -11,13 +11,13 @@ CRUD-операции для работы с моделью TestResult.
     - Логирование через logging_config.logger
 """
 
-from typing import Optional, Dict, Any
+from typing import Any, Dict, Optional
 
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from database.models import LevelEnum, TestResult
 from logging_config import logger
-from database.models import TestResult, LevelEnum
 
 
 async def create_test_result(
@@ -55,8 +55,8 @@ async def create_test_result(
     try:
         try:
             level_enum = LevelEnum(level)
-        except ValueError:
-            raise ValueError(f"Недопустимый уровень теста: {level}")
+        except ValueError as err:
+            raise ValueError(f"Недопустимый уровень теста: {level}") from err
 
         new_result = TestResult(
             user_id=user_id,
@@ -75,7 +75,9 @@ async def create_test_result(
 
         logger.info(
             "🟢 Создан TestResult для user_id=%s, уровень=%s, file_id=%s",
-            user_id, level_enum.value, dropbox_file_id
+            user_id,
+            level_enum.value,
+            dropbox_file_id,
         )
 
         return new_result

@@ -19,21 +19,21 @@ from reportlab.lib import colors
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
 from reportlab.lib.units import cm
+from reportlab.pdfbase import pdfmetrics
+from reportlab.pdfbase.cidfonts import UnicodeCIDFont
+from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.platypus import (
     BaseDocTemplate,
-    SimpleDocTemplate,
+    Frame,
+    FrameBreak,
+    Image,
+    PageTemplate,
     Paragraph,
+    SimpleDocTemplate,
     Spacer,
     Table,
     TableStyle,
-    Frame,
-    PageTemplate,
-    FrameBreak,
-    Image,
 )
-from reportlab.pdfbase import pdfmetrics
-from reportlab.pdfbase.ttfonts import TTFont
-from reportlab.pdfbase.cidfonts import UnicodeCIDFont
 
 from logging_config import logger
 
@@ -45,6 +45,7 @@ FONT_REGULAR_PATH = os.path.join(FONT_DIR, "DejaVuSans.ttf")
 FONT_BOLD_PATH = os.path.join(FONT_DIR, "DejaVuSans-Bold.ttf")
 
 DEFAULT_FALLBACK_FONT = "HeiseiKakuGo-W5"  # надёжный CID-шрифт как fallback
+
 
 # Регистрация шрифтов с безопасным fallback
 def _register_fonts() -> None:
@@ -59,7 +60,9 @@ def _register_fonts() -> None:
             if os.path.exists(FONT_REGULAR_PATH):
                 pdfmetrics.registerFont(TTFont("DejaVuSans-Bold", FONT_REGULAR_PATH))
     except Exception as exc:  # pragma: no cover - защитный fallback
-        logger.warning("Не удалось зарегистрировать DejaVu шрифты, использую CID-фонт: %s", exc)
+        logger.warning(
+            "Не удалось зарегистрировать DejaVu шрифты, использую CID-фонт: %s", exc
+        )
         pdfmetrics.registerFont(UnicodeCIDFont(DEFAULT_FALLBACK_FONT))
 
 
@@ -80,6 +83,7 @@ FONT_BOLD = _safe_font("DejaVuSans-Bold")
 
 # Единый формат временной метки для имён файлов
 TIMESTAMP_FMT = "%Y-%m-%d_%H-%M-%S"
+
 
 # ---------------------------------------------------------------------
 # Унифицированные стили Paragraph/Table
@@ -129,8 +133,12 @@ def _make_styles() -> Dict[str, ParagraphStyle]:
 
 _STYLES = _make_styles()
 
-def _p(text: str) -> Paragraph:
+
+def _p(text: str | List[str]) -> Paragraph:
+    if isinstance(text, list):
+        text = ", ".join(text)
     return Paragraph(text.replace("\n", "<br/>"), _STYLES["Body"])
+
 
 # ---------------------------------------------------------------------
 # Вспомогательные функции для табличек и логотипа
@@ -152,17 +160,19 @@ def _make_table(
     data: List[List[Any]],
     col_widths: Optional[List[float]] = None,
     repeat_header: bool = False,
-    align: str = "CENTER"
+    align: str = "CENTER",
 ) -> Table:
     """Создаёт таблицу с единым стилем для проекта."""
     table = Table(data, colWidths=col_widths, repeatRows=1 if repeat_header else 0)
-    table_style = TableStyle([
-        ("GRID", (0, 0), (-1, -1), 0.5, colors.grey),
-        ("FONTNAME", (0, 0), (-1, -1), FONT_REGULAR),
-        ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
-        ("ALIGN", (0, 0), (-1, -1), align),
-        ("WORDWRAP", (0, 0), (-1, -1), "CJK"),
-    ])
+    table_style = TableStyle(
+        [
+            ("GRID", (0, 0), (-1, -1), 0.5, colors.grey),
+            ("FONTNAME", (0, 0), (-1, -1), FONT_REGULAR),
+            ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+            ("ALIGN", (0, 0), (-1, -1), align),
+            ("WORDWRAP", (0, 0), (-1, -1), "CJK"),
+        ]
+    )
     # если есть header — делаем ему фон
     if data and isinstance(data[0], (list, tuple)):
         table_style.add("BACKGROUND", (0, 0), (-1, 0), colors.whitesmoke)
@@ -178,7 +188,9 @@ def _add_background_and_border(canvas, doc) -> None:
     margin = 20
     canvas.setLineWidth(1)
     canvas.setStrokeColorRGB(0.8, 0.78, 0.7)
-    canvas.rect(margin, margin, A4[0] - 2 * margin, A4[1] - 2 * margin, fill=0, stroke=1)
+    canvas.rect(
+        margin, margin, A4[0] - 2 * margin, A4[1] - 2 * margin, fill=0, stroke=1
+    )
     canvas.restoreState()
 
 
@@ -199,8 +211,9 @@ TRANSLATIONS = {
     "friends": "Друзья",
     "internet": "Интернет",
     "telegram": "Телеграм",
-    "other": "Другое"
+    "other": "Другое",
 }
+
 
 def _tr(value: str | None) -> str:
     if value is None:
@@ -220,11 +233,11 @@ def generate_application_pdf(
     level: Optional[str],
     possible_scheduling: List[Dict[str, List[str]]],
     reference_source: Optional[str],
-    need_ielts: bool,
     studied_at_lanex: bool,
     previous_experience: Optional[List[str]],
     telegram_id: int,
     notes: str = "",
+    need_ielts: Optional[bool] = None,
     output_dir: Optional[str] = None,
     is_update: bool = False,
 ) -> str:
@@ -279,6 +292,7 @@ def generate_application_pdf(
         elements.append(Spacer(1, 10))
 
         # Основная таблица
+        ielts_display = "Да" if need_ielts else ("Нет" if need_ielts is False else "—")
         data = [
             ["Полное имя", _p(applicant_name)],
             ["Номер телефона", _p(phone_number)],
@@ -286,10 +300,20 @@ def generate_application_pdf(
             ["Формат занятий", _p(", ".join(_tr(x) for x in preferred_class_format))],
             ["Режим обучения", _p(", ".join(_tr(x) for x in preferred_study_mode))],
             ["Уровень", _p(level or "—")],
-            ["Источник информации", _p(_tr(reference_source) if reference_source else "—")],
-            ["Нужен IELTS", _p("Да" if need_ielts else "Нет")],
+            [
+                "Источник информации",
+                _p(_tr(reference_source) if reference_source else "—"),
+            ],
+            ["Нужен IELTS", _p(ielts_display)],
             ["Ранее обучался(-ась) в Lanex", _p("Да" if studied_at_lanex else "Нет")],
-            ["Предыдущий опыт", _p(", ".join(_tr(x) for x in previous_experience)) if previous_experience else "—"],
+            [
+                "Предыдущий опыт",
+                (
+                    _p(", ".join(_tr(x) for x in previous_experience))
+                    if previous_experience
+                    else "—"
+                ),
+            ],
         ]
         elements.append(_make_table(data, col_widths=[6 * cm, 9 * cm], align="LEFT"))
         elements.append(Spacer(1, 12))
@@ -298,11 +322,15 @@ def generate_application_pdf(
         elements.append(Paragraph("Доступное расписание", _STYLES["Subtitle"]))
         schedule_data = [[_p("День"), _p("Предпочтительные часы")]]
         for slot in possible_scheduling:
-            schedule_data.append([
-                _p(slot.get("day", "—")),
-                _p(", ".join(slot.get("times", [])) or "—"),
-            ])
-        elements.append(_make_table(schedule_data, col_widths=[4 * cm, 11 * cm], repeat_header=True))
+            schedule_data.append(
+                [
+                    _p(slot.get("day", "—")),
+                    _p(", ".join(slot.get("times", [])) or "—"),
+                ]
+            )
+        elements.append(
+            _make_table(schedule_data, col_widths=[4 * cm, 11 * cm], repeat_header=True)
+        )
 
         # ОБЯЗАТЕЛЬНЫЙ ПЕРЕКЛЮЧАТЕЛЬ НА НИЖНИЙ ФРЕЙМ
         elements.append(FrameBreak())
@@ -317,41 +345,45 @@ def generate_application_pdf(
             colWidths=[doc.width],
             rowHeights=[1.2 * cm] * 4,
         )
-        notes_table.setStyle(TableStyle([
-            ("BOX", (0, 0), (-1, -1), 1, colors.black),
-            ("INNERGRID", (0, 0), (-1, -1), 0.5, colors.grey),
-            ("VALIGN", (0, 0), (-1, -1), "TOP"),
-            ("FONTNAME", (0, 0), (-1, -1), FONT_REGULAR),
-        ]))
+        notes_table.setStyle(
+            TableStyle(
+                [
+                    ("BOX", (0, 0), (-1, -1), 1, colors.black),
+                    ("INNERGRID", (0, 0), (-1, -1), 0.5, colors.grey),
+                    ("VALIGN", (0, 0), (-1, -1), "TOP"),
+                    ("FONTNAME", (0, 0), (-1, -1), FONT_REGULAR),
+                ]
+            )
+        )
         elements.append(notes_table)
 
         # Frame'ы
         frame_notes_height = 7 * cm
-        frame_main_height = A4[1] - frame_notes_height - doc.topMargin - doc.bottomMargin
+        frame_main_height = (
+            A4[1] - frame_notes_height - doc.topMargin - doc.bottomMargin
+        )
 
         frame_main = Frame(
             doc.leftMargin,
             doc.bottomMargin + frame_notes_height,
             doc.width,
             frame_main_height,
-            id="main"
+            id="main",
         )
 
         frame_notes = Frame(
-            doc.leftMargin,
-            doc.bottomMargin,
-            doc.width,
-            frame_notes_height,
-            id="notes"
+            doc.leftMargin, doc.bottomMargin, doc.width, frame_notes_height, id="notes"
         )
 
-        doc.addPageTemplates([
-            PageTemplate(
-                id="app_template",
-                frames=[frame_main, frame_notes],
-                onPage=_add_background_and_border,
-            )
-        ])
+        doc.addPageTemplates(
+            [
+                PageTemplate(
+                    id="app_template",
+                    frames=[frame_main, frame_notes],
+                    onPage=_add_background_and_border,
+                )
+            ]
+        )
 
         doc.build(elements)
         return filepath
@@ -375,14 +407,24 @@ def generate_test_report(
     Args:
         test_taker: Имя участника.
         level: Уровень теста.
-        closed_answers: Структура вида {"task1": {"1": {"answer": "...", "status": "correct"}}}
+        closed_answers:
+            Структура закрытых ответов вида:
+            {
+                "task1": {
+                    "1": {
+                        "answer": "...",
+                        "status": "correct"
+                    }
+                }
+            }
         open_answers: Открытые ответы (может быть None).
-        score: Словарь с баллами по таскам.
+        score: Словарь с баллами по заданиям.
         output_dir: Папка для сохранения (по умолчанию ./generated_reports).
 
     Returns:
         str: Путь к сохранённому PDF.
     """
+
     try:
         reports_dir = output_dir or os.path.join(os.getcwd(), "generated_reports")
         os.makedirs(reports_dir, exist_ok=True)
@@ -410,7 +452,12 @@ def generate_test_report(
         info_style = _STYLES["Body"]
         elements.append(Paragraph(f"<b>Test taker:</b> {test_taker}", info_style))
         elements.append(Paragraph(f"<b>Level:</b> {level}", info_style))
-        elements.append(Paragraph(f"<b>Date:</b> {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}", info_style))
+        elements.append(
+            Paragraph(
+                f"<b>Date:</b> {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}",
+                info_style,
+            )
+        )
         elements.append(Spacer(1, 10))
 
         # Closed tasks
@@ -433,7 +480,9 @@ def generate_test_report(
 
                 table_data.append([q_num, answer_display, status_display])
 
-            table = _make_table(table_data, col_widths=[2.5 * cm, 11 * cm, 3.5 * cm], repeat_header=True)
+            table = _make_table(
+                table_data, col_widths=[2.5 * cm, 11 * cm, 3.5 * cm], repeat_header=True
+            )
             elements.append(table)
             elements.append(Spacer(1, 6))
 
@@ -449,17 +498,25 @@ def generate_test_report(
                 elements.append(Paragraph(task, _STYLES["Section"]))
                 for q_num, user_answer in answers.items():
                     if isinstance(user_answer, str):
-                        formatted_answer = user_answer.replace("\n\n", "<br/><br/>").replace("\n", "<br/>")
+                        formatted_answer = user_answer.replace(
+                            "\n\n", "<br/><br/>"
+                        ).replace("\n", "<br/>")
                     else:
                         formatted_answer = str(user_answer)
 
-                    answer_paragraph = Paragraph(f"<b>Q{q_num}:</b> {formatted_answer}", info_style)
+                    answer_paragraph = Paragraph(
+                        f"<b>Q{q_num}:</b> {formatted_answer}", info_style
+                    )
                     ans_table = Table([[answer_paragraph]], colWidths=[doc.width])
-                    ans_table.setStyle(TableStyle([
-                        ("BACKGROUND", (0, 0), (-1, 0), colors.whitesmoke),
-                        ("GRID", (0, 0), (-1, -1), 0.5, colors.grey),
-                        ("FONTNAME", (0, 0), (-1, -1), "DejaVuSans"),
-                    ]))
+                    ans_table.setStyle(
+                        TableStyle(
+                            [
+                                ("BACKGROUND", (0, 0), (-1, 0), colors.whitesmoke),
+                                ("GRID", (0, 0), (-1, -1), 0.5, colors.grey),
+                                ("FONTNAME", (0, 0), (-1, -1), "DejaVuSans"),
+                            ]
+                        )
+                    )
                     elements.append(ans_table)
                     elements.append(Spacer(1, 6))
 
@@ -467,14 +524,22 @@ def generate_test_report(
         elements.append(Spacer(1, 12))
         elements.append(Paragraph("Overall Feedback", _STYLES["Subtitle"]))
         feedback_table = Table([[""]], colWidths=[doc.width], rowHeights=[4 * cm])
-        feedback_table.setStyle(TableStyle([
-            ("BOX", (0, 0), (-1, -1), 1, colors.black),
-            ("FONTNAME", (0, 0), (-1, -1), FONT_REGULAR),
-            ("VALIGN", (0, 0), (-1, -1), "TOP"),
-        ]))
+        feedback_table.setStyle(
+            TableStyle(
+                [
+                    ("BOX", (0, 0), (-1, -1), 1, colors.black),
+                    ("FONTNAME", (0, 0), (-1, -1), FONT_REGULAR),
+                    ("VALIGN", (0, 0), (-1, -1), "TOP"),
+                ]
+            )
+        )
         elements.append(feedback_table)
 
-        doc.build(elements, onFirstPage=_add_background_and_border, onLaterPages=_add_background_and_border)
+        doc.build(
+            elements,
+            onFirstPage=_add_background_and_border,
+            onLaterPages=_add_background_and_border,
+        )
         logger.info("PDF отчёт о тесте сгенерирован: %s", filepath)
         return filepath
 

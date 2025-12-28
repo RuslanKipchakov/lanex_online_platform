@@ -6,15 +6,16 @@
     - upload_to_dropbox: загрузка файлов в структурированные папки Dropbox.
     - ensure_user_dropbox_folder: проверка/создание личной папки пользователя.
     - get_folder_path_by_id: получение пути по Dropbox folder ID.
-    - get_or_create_user_dropbox_folder: асинхронное получение/создание папки и сохранение ID в БД.
+    - get_or_create_user_dropbox_folder: асинхронное получение/создание
+      папки и сохранение ID в БД.
 """
 
 import os
 from datetime import datetime
 
 import dropbox
-from dropbox.exceptions import AuthError, ApiError, HttpError
-from dropbox.files import FolderMetadata, FileMetadata
+from dropbox.exceptions import ApiError, AuthError, HttpError
+from dropbox.files import FileMetadata, FolderMetadata, WriteMode
 
 from config import settings
 from database.base import AsyncSessionLocal
@@ -35,7 +36,7 @@ def get_dropbox_client() -> dropbox.Dropbox:
         dbx = dropbox.Dropbox(
             oauth2_refresh_token=settings.dropbox_refresh_token,
             app_key=settings.dropbox_app_key,
-            app_secret=settings.dropbox_app_secret
+            app_secret=settings.dropbox_app_secret,
         )
         dbx.users_get_current_account()
         return dbx
@@ -55,11 +56,11 @@ def upload_to_dropbox(
     file_type: str,
     username: str | None = None,
     level: str | None = None,
-    user_folder_path: str | None = None
+    user_folder_path: str | None = None,
 ) -> dict:
-
     """
-    Загружает файл в Dropbox и возвращает словарь с dropbox_path, dropbox_file_id и file_name.
+    Загружает файл в Dropbox и возвращает словарь с dropbox_path,
+    dropbox_file_id и file_name.
 
     Args:
         local_path: Путь к локальному файлу.
@@ -108,7 +109,11 @@ def upload_to_dropbox(
     try:
         dbx.files_get_metadata(subfolder_path)
     except ApiError as e:
-        if hasattr(e, "error") and e.error.is_path() and e.error.get_path().is_not_found():
+        if (
+            hasattr(e, "error")
+            and e.error.is_path()
+            and e.error.get_path().is_not_found()
+        ):
             dbx.files_create_folder_v2(subfolder_path)
         else:
             logger.error("Dropbox folder check error: %s", e)
@@ -118,17 +123,24 @@ def upload_to_dropbox(
 
     try:
         with open(local_path, "rb") as f:
-            dbx.files_upload(f.read(), dropbox_path, mode=dropbox.files.WriteMode("overwrite"))  # type: ignore
+            dbx.files_upload(
+                f.read(),
+                dropbox_path,
+                mode=WriteMode.overwrite,
+            )  # type: ignore
 
         metadata = dbx.files_get_metadata(dropbox_path)
         if isinstance(metadata, FileMetadata):
             dropbox_file_id = metadata.id
         else:
-            raise ValueError(f"Не удалось получить dropbox_file_id, метаданные не являются файлом: {metadata}")
+            raise ValueError(
+                f"Не удалось получить dropbox_file_id, "
+                f"метаданные не являются файлом: {metadata}"
+            )
         return {
             "dropbox_path": dropbox_path,
             "dropbox_file_id": dropbox_file_id,
-            "file_name": filename
+            "file_name": filename,
         }
 
     except (ApiError, HttpError) as e:
@@ -136,7 +148,9 @@ def upload_to_dropbox(
         raise
 
 
-def ensure_user_dropbox_folder(dbx: dropbox.Dropbox, telegram_id: int) -> tuple[str, str]:
+def ensure_user_dropbox_folder(
+    dbx: dropbox.Dropbox, telegram_id: int
+) -> tuple[str, str]:
     """Создаёт папку пользователя, если не существует.
 
     Returns:
@@ -147,17 +161,16 @@ def ensure_user_dropbox_folder(dbx: dropbox.Dropbox, telegram_id: int) -> tuple[
 
     try:
         metadata = dbx.files_get_metadata(user_folder_path)
-
         if isinstance(metadata, FolderMetadata):
             return metadata.id, user_folder_path
-
         raise RuntimeError("Unexpected metadata type for user folder")
 
     except ApiError as e:
         if e.error.is_path() and e.error.get_path().is_not_found():
             res = dbx.files_create_folder_v2(user_folder_path)
+            if res is None:
+                raise RuntimeError("Dropbox did not return folder metadata") from e
             return res.metadata.id, user_folder_path
-
         logger.error("Dropbox folder creation/check error: %s", e)
         raise
 
@@ -166,13 +179,19 @@ def get_folder_path_by_id(dbx: dropbox.Dropbox, folder_id: str) -> str:
     """Возвращает путь к папке по ID."""
     try:
         metadata = dbx.files_get_metadata(folder_id)
+
+        if metadata is None or not hasattr(metadata, "path_display"):
+            raise RuntimeError(f"Invalid metadata for folder_id={folder_id}")
+
         return metadata.path_display
     except ApiError as e:
         logger.error("Dropbox get path by ID error (%s): %s", folder_id, e)
         raise
 
 
-async def get_or_create_user_dropbox_folder(dbx: dropbox.Dropbox, telegram_id: int) -> str:
+async def get_or_create_user_dropbox_folder(
+    dbx: dropbox.Dropbox, telegram_id: int
+) -> str:
     """Асинхронно получает или создаёт папку пользователя и сохраняет ID в БД."""
     async with AsyncSessionLocal() as session:
         user_session = await read_user_session(session, telegram_id)

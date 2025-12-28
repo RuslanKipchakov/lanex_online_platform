@@ -12,22 +12,22 @@ CRUD-операции для работы с моделью Application.
     - Логирование через logging_config.logger
 """
 
-from typing import Optional, List, Dict, Any, Sequence
+from typing import Any, Dict, List, Optional, Sequence
 
 from fastapi import HTTPException
 from sqlalchemy import select
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from logging_config import logger
 from database.models import (
     Application,
     LevelEnum,
     PreferredClassFormatEnum,
     PreferredStudyModeEnum,
-    ReferenceSourceEnum,
     PreviousExperienceEnum,
+    ReferenceSourceEnum,
 )
+from logging_config import logger
 
 
 def validate_enum_fields(data: dict) -> dict:
@@ -64,8 +64,10 @@ def validate_enum_fields(data: dict) -> dict:
             continue
         try:
             validated[field] = enum_cls(value)
-        except ValueError:
-            raise ValueError(f"Недопустимое значение '{value}' для поля '{field}'")
+        except ValueError as err:
+            raise ValueError(
+                f"Недопустимое значение '{value}' для поля '{field}'"
+            ) from err
 
     # Enum-списки
     for field, enum_cls in list_enum_fields.items():
@@ -75,12 +77,16 @@ def validate_enum_fields(data: dict) -> dict:
             continue
 
         if not isinstance(values, list):
-            raise ValueError(f"Поле '{field}' должно быть списком, получено: {type(values).__name__}")
+            raise ValueError(
+                f"Поле '{field}' должно быть списком, получено: {type(values).__name__}"
+            )
 
         try:
             validated[field] = [enum_cls(item) for item in values]
-        except ValueError:
-            raise ValueError(f"Недопустимые значения в поле '{field}': {values}")
+        except ValueError as err:
+            raise ValueError(
+                f"Недопустимые значения в поле '{field}': {values}"
+            ) from err
 
     return validated
 
@@ -128,13 +134,15 @@ async def create_application(
     Raises:
         SQLAlchemyError: Ошибка взаимодействия с базой данных.
     """
-    validated = validate_enum_fields({
-        "level": level,
-        "preferred_class_format": preferred_class_format,
-        "preferred_study_mode": preferred_study_mode,
-        "reference_source": reference_source,
-        "previous_experience": previous_experience,
-    })
+    validated = validate_enum_fields(
+        {
+            "level": level,
+            "preferred_class_format": preferred_class_format,
+            "preferred_study_mode": preferred_study_mode,
+            "reference_source": reference_source,
+            "previous_experience": previous_experience,
+        }
+    )
 
     try:
         new_application = Application(
@@ -210,13 +218,15 @@ async def update_application_by_id(
         HTTPException: Если заявка не найдена.
         SQLAlchemyError: Ошибка БД.
     """
-    validated = validate_enum_fields({
-        "level": level,
-        "preferred_class_format": preferred_class_format,
-        "preferred_study_mode": preferred_study_mode,
-        "reference_source": reference_source,
-        "previous_experience": previous_experience,
-    })
+    validated = validate_enum_fields(
+        {
+            "level": level,
+            "preferred_class_format": preferred_class_format,
+            "preferred_study_mode": preferred_study_mode,
+            "reference_source": reference_source,
+            "previous_experience": previous_experience,
+        }
+    )
 
     try:
         app = await read_application_by_id(session, id)
@@ -258,8 +268,7 @@ async def update_application_by_id(
 
 
 async def read_application_by_id(
-    session: AsyncSession,
-    id: int
+    session: AsyncSession, id: int
 ) -> Optional[Application]:
     """
     Возвращает заявку по её ID.
@@ -272,9 +281,7 @@ async def read_application_by_id(
         Application | None: Найденная заявка.
     """
     try:
-        result = await session.execute(
-            select(Application).where(Application.id == id)
-        )
+        result = await session.execute(select(Application).where(Application.id == id))
         return result.scalar_one_or_none()
     except SQLAlchemyError as e:
         logger.error("❌ Database error in read_application_by_id: %s", e)
@@ -282,8 +289,7 @@ async def read_application_by_id(
 
 
 async def read_application_by_user_id(
-    session: AsyncSession,
-    user_id: int
+    session: AsyncSession, user_id: int
 ) -> Sequence[Application]:
     """
     Возвращает все заявки пользователя.

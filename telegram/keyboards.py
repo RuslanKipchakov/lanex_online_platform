@@ -13,7 +13,7 @@ import time
 import urllib.parse
 from typing import List, Optional
 
-from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, WebAppInfo
+from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup, WebAppInfo
 
 from config import settings
 
@@ -48,6 +48,7 @@ def versioned_url(path: str, init_data: Optional[str] = None) -> str:
 #  Главное меню
 # ---------------------------------------------------------------------------
 
+
 def get_main_menu(init_data: Optional[str] = None) -> InlineKeyboardMarkup:
     """
     Возвращает главное меню с выбором действий:
@@ -55,18 +56,31 @@ def get_main_menu(init_data: Optional[str] = None) -> InlineKeyboardMarkup:
         - Изменить заявку
         - Пройти тест на уровень
     """
-    return InlineKeyboardMarkup(inline_keyboard=[
-        [
-            InlineKeyboardButton(
-                text="Оставить заявку на обучение",
-                web_app=WebAppInfo(
-                    url=versioned_url("/html_pages/application_page/application_page.html", init_data)
-                ),
-            )
-        ],
-        [InlineKeyboardButton(text="Изменить заявку", callback_data="update_application")],
-        [InlineKeyboardButton(text="Проверить свой уровень", callback_data="check_level")],
-    ])
+    return InlineKeyboardMarkup(
+        inline_keyboard=[
+            [
+                InlineKeyboardButton(
+                    text="Оставить заявку на обучение",
+                    web_app=WebAppInfo(
+                        url=versioned_url(
+                            "/html_pages/application_page/application_page.html",
+                            init_data,
+                        )
+                    ),
+                )
+            ],
+            [
+                InlineKeyboardButton(
+                    text="Изменить заявку", callback_data="update_application"
+                )
+            ],
+            [
+                InlineKeyboardButton(
+                    text="Проверить свой уровень", callback_data="check_level"
+                )
+            ],
+        ]
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -76,9 +90,18 @@ def get_main_menu(init_data: Optional[str] = None) -> InlineKeyboardMarkup:
 LEVEL_BUTTONS = [
     ("Starter", "/html_pages/test_pages/levels/starter/starter_page.html"),
     ("Elementary", "/html_pages/test_pages/levels/elementary/elementary_page.html"),
-    ("Pre-Intermediate", "/html_pages/test_pages/levels/pre_intermediate/pre_intermediate_page.html"),
-    ("Intermediate", "/html_pages/test_pages/levels/intermediate/intermediate_page.html"),
-    ("Upper-Intermediate", "/html_pages/test_pages/levels/upper_intermediate/upper_intermediate_page.html"),
+    (
+        "Pre-Intermediate",
+        "/html_pages/test_pages/levels/pre_intermediate/pre_intermediate_page.html",
+    ),
+    (
+        "Intermediate",
+        "/html_pages/test_pages/levels/intermediate/intermediate_page.html",
+    ),
+    (
+        "Upper-Intermediate",
+        "/html_pages/test_pages/levels/upper_intermediate/upper_intermediate_page.html",
+    ),
 ]
 
 
@@ -89,12 +112,14 @@ def get_levels_menu(init_data: Optional[str] = None) -> InlineKeyboardMarkup:
     """
     rows = []
     for label, path in LEVEL_BUTTONS:
-        rows.append([
-            InlineKeyboardButton(
-                text=label,
-                web_app=WebAppInfo(url=versioned_url(path, init_data)),
-            )
-        ])
+        rows.append(
+            [
+                InlineKeyboardButton(
+                    text=label,
+                    web_app=WebAppInfo(url=versioned_url(path, init_data)),
+                )
+            ]
+        )
 
     rows.append([InlineKeyboardButton(text="⬅️ Назад", callback_data="go_back")])
     return InlineKeyboardMarkup(inline_keyboard=rows)
@@ -104,7 +129,10 @@ def get_levels_menu(init_data: Optional[str] = None) -> InlineKeyboardMarkup:
 #  Динамическое меню заявок
 # ---------------------------------------------------------------------------
 
-def applications_menu(applications: List[dict], init_data: Optional[str] = None) -> InlineKeyboardMarkup:
+
+def applications_menu(
+    applications: List[dict], init_data: Optional[str] = None
+) -> InlineKeyboardMarkup:
     """
     Генерирует клавиатуру со списком заявок пользователя.
 
@@ -125,12 +153,14 @@ def applications_menu(applications: List[dict], init_data: Optional[str] = None)
             f"/html_pages/application_page/application_page.html?edit_id={app['id']}",
             init_data,
         )
-        rows.append([
-            InlineKeyboardButton(
-                text=f"{app['name']} ({app['date']})",
-                web_app=WebAppInfo(url=edit_url),
-            )
-        ])
+        rows.append(
+            [
+                InlineKeyboardButton(
+                    text=f"{app['name']} ({app['date']})",
+                    web_app=WebAppInfo(url=edit_url),
+                )
+            ]
+        )
 
     rows.append([InlineKeyboardButton(text="⬅️ Назад", callback_data="go_back")])
 

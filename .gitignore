@@ -202,9 +202,4 @@ __marimo__/
 # Streamlit
 .streamlit/secrets.toml
 
-# temporary crud files
-database/crud/temp_*.py
-
-# initiation of database
-database/init_db.py
 
