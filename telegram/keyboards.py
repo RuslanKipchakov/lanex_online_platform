@@ -88,19 +88,19 @@ def get_main_menu(init_data: Optional[str] = None) -> InlineKeyboardMarkup:
 # ---------------------------------------------------------------------------
 
 LEVEL_BUTTONS = [
-    ("Starter", "/html_pages/test_pages/levels/starter/starter_page.html"),
-    ("Elementary", "/html_pages/test_pages/levels/elementary/elementary_page.html"),
+    ("Starter", "/html_pages/levels/starter/starter_page.html"),
+    ("Elementary", "/html_pages/levels/elementary/elementary_page.html"),
     (
         "Pre-Intermediate",
-        "/html_pages/test_pages/levels/pre_intermediate/pre_intermediate_page.html",
+        "/html_pages/levels/pre_intermediate/pre_intermediate_page.html",
     ),
     (
         "Intermediate",
-        "/html_pages/test_pages/levels/intermediate/intermediate_page.html",
+        "/html_pages/levels/intermediate/intermediate_page.html",
     ),
     (
         "Upper-Intermediate",
-        "/html_pages/test_pages/levels/upper_intermediate/upper_intermediate_page.html",
+        "/html_pages/levels/upper_intermediate/upper_intermediate_page.html",
     ),
 ]
 
